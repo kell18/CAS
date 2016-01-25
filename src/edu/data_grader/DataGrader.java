@@ -12,7 +12,7 @@ public class DataGrader {
 
         try {
             int lentachId = -29534144;
-            JSONArray comments = grader.GatherComments(lentachId, 3).orElseThrow(
+            JSONArray comments = grader.GatherComments(lentachId, 100).orElseThrow(
                     () -> new NoSuchElementException("No comments found"));
             JSONObject output = new JSONObject();
             output.put("comments", comments);
