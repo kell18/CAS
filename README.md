@@ -1,3 +1,3 @@
-# FeedbackSupervisor
+# CAS. Content analysis system
 
-Analysis of comments, feedback, etc.
+System for analysis of comments, feedback, etc.
