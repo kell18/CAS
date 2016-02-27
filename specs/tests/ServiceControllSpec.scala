@@ -1,29 +1,30 @@
-package com.example
+package web.service
 
 import org.specs2.mutable.Specification
 import spray.testkit.Specs2RouteTest
 import spray.http._
 import StatusCodes._
+// import web.service._
 
-class MyServiceSpec extends Specification with Specs2RouteTest with MyService {
+class ServiceControllSpec extends Specification with Specs2RouteTest with ServiceControll {
   def actorRefFactory = system
   
-  "MyService" should {
+  "ServiceControll" should {
 
     "return a greeting for GET requests to the root path" in {
-      Get() ~> myRoute ~> check {
-        responseAs[String] must contain("Say hello")
+      Get() ~> route ~> check {
+        responseAs[String] must contain("System")
       }
     }
 
     "leave GET requests to other paths unhandled" in {
-      Get("/kermit") ~> myRoute ~> check {
+      Get("/kermit") ~> route ~> check {
         handled must beFalse
       }
     }
 
     "return a MethodNotAllowed error for PUT requests to the root path" in {
-      Put() ~> sealRoute(myRoute) ~> check {
+      Put() ~> sealRoute(route) ~> check {
         status === MethodNotAllowed
         responseAs[String] === "HTTP method not allowed, supported methods: GET"
       }
