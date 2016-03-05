@@ -1,15 +1,16 @@
-package web.pages
+package cas.web.pages
 
 import spray.routing._
 import Directives._
+import cas.utils
 
 object ConfigurePage {
 
-	val route = path("configure") {
+	def apply(pagePath: String) = path(pagePath){
 		get	{
 			parameter("threshold".as[Int]) { threshold =>
 				complete {
-					<span>Threshold = {threshold}</span>
+					<span>Likes removal threshold = {threshold}</span>
 				}
 			}
 		}

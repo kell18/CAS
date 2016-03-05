@@ -1,0 +1,44 @@
+case class Validatable[T](f: => T, msg: String);
+
+  class Validated[T](valids: List[Validatable]) {
+    val (success, failures) = valids.foldRight(List[T], List[String]) { (l, r) =>
+      case (l: T, (sx, fx))       => (l :: sx, fx)
+      case (l: String, (sx, fx))  => (sx, l :: fx)
+    }
+
+    def isAllSuccess = failures.length == 0
+    def isAnySuccess = success.length > 0
+  }
+  
+
+  validated = Validated[Int] (
+    Validatable( { "123".toInt }, "123 is not an int"),
+    Validatable( { "wasd".toInt }, "wasd is not an int")
+  )
+
+  if (validated.isAllSuccess) 
+
+
+
+
+package cas.model.vk_subject
+package cas.model._
+
+class Subject(componentsL: List[Component]) extends cas.model.subject.Subject {
+  
+}
+
+
+
+  // val json = UserSettings(25).toJson
+  // println(json)
+  // val setts = json.convertTo[UserSettings]
+  // println(setts.likesThreshold)
+
+  // Utils.writeToFile(Utils.dataPath + "/web.model/UserSettings.json", UserSettings(45).toJson.prettyPrint)
+
+  // val file = Source.fromFile(Utils.dataPath + "/web.model/UserSettings.json").mkString
+
+  // val usrSettings = if (file.trim.isEmpty) UserSettings(20) else file.parseJson.convertTo[UserSettings]
+
+  // println(usrSettings.likesThreshold)

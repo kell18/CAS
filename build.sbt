@@ -8,11 +8,10 @@ scalaSource in Compile := baseDirectory.value / "src"
 
 scalaSource in Test := baseDirectory.value / "specs" / "tests"
 
-resourceDirectory in Compile := baseDirectory.value / "resources"
-
-resourceDirectory in Test := baseDirectory.value / "specs" / "resources"
-
 scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8")
+
+libraryDependencies += "org.scala-lang" % "scala-reflect" % "2.10.6"
+libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.2.1"
 
 libraryDependencies ++= {
   val akkaV = "2.3.9"
@@ -20,6 +19,7 @@ libraryDependencies ++= {
   Seq(
     "io.spray"            %%  "spray-can"     % sprayV,
     "io.spray"            %%  "spray-routing" % sprayV,
+    "io.spray"            %%  "spray-json"    % "1.3.1",
     "io.spray"            %%  "spray-testkit" % sprayV  % "test",
     "com.typesafe.akka"   %%  "akka-actor"    % akkaV,
     "com.typesafe.akka"   %%  "akka-testkit"  % akkaV   % "test",
