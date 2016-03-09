@@ -1,8 +1,7 @@
-package cas.web.pages
+package web.pages
 
 import spray.routing._
 import Directives._
-import cas.utils
 
 object ConfigurePage {
 

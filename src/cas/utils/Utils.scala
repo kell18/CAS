@@ -1,4 +1,4 @@
-package cas.utils
+package utils
 
 import java.io._
 import com.typesafe.config._

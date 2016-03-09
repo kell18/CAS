@@ -1,3 +1,61 @@
+case SiftTick(s) =>
+      val responce = for {
+        toSift <- router.getSubjectsChunk
+        chunks <- divideToChunks(toSift)
+        chunk <- chunks
+        toDel <- findDeletingSubjs(chunk) // TODO: Parallel
+        isSended <- router.sendToDelete(toDel)
+      } yield SiftTick
+      responce pipeTo self
+
+
+class AContentSifter(val service: ApiService, val maxUnits: Long) extends Actor {
+  val (grSize, unitsCnt) = divideByUnits(service.estimateTagsLim)
+  val units = for (i <- 0L until unitsCnt) yield SiftersFactory.createSiftUnit(service)
+
+  override def receive = {
+    case StartSift(estim) => {
+      for {
+        i <- 0L until unitsCnt
+        subjT = service.getSubjectsTags(i, grSize)
+        if (subjT.length > 0) // TODO: Check it carefuly
+        sifterA = SiftersFactory.createSiftUnit(service)
+        sifterRespF <- sifterA ? StartSiftUnit(estim, subjT)
+      } sifterRespF mapTo[] self
+    }
+    case unknown => ??? // Log upper
+  }
+
+  // TODO:
+  def divideByUnits(tagsCount: Long): Tuple2[Long, Long] = if (tagsCount < maxUnits) (1, tagsCount) else ???
+  // else ((tagsCount + maxUnits - 1) / maxUnits, maxUnits)
+
+}
+
+object SiftersFactory {
+  def createSiftUnit(service: ApiService) = Props(new ASiftUnit(service))
+}
+
+class ASiftUnit(val service: ApiService) extends Actor {
+
+  override def receive = {
+    case StartSiftUnit(estim, tags) => {
+      for {
+        tag <- tags
+        subjs <- service.getTagSubjects(tag)
+        if (subjs)
+      }
+        sender() ! Right()
+    }
+  }
+
+  def makeSiftRound(subjs: List[Subject]) = ???
+}
+
+
+    val f = l.find(i => i._1.isFailure)
+    if (f.isEmpty) Success(l.foldLeft(0.0){ (l, r)  => l + r._1.get * r._2 }) else f.get._1
+
 case class Validatable[T](f: => T, msg: String);
 
   class Validated[T](valids: List[Validatable]) {

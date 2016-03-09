@@ -1,9 +1,9 @@
-package cas.web.model
+package web.model
 
 import scala.io.Source
 import spray.json._
-import cas.utils._
-import cas.web.model._
+import utils._
+import web.model._
 
 case class UserSettings(likesThreshold: Int)
 
