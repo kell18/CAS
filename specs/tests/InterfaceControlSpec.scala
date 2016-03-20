@@ -1,15 +1,15 @@
 package web.service
 
+import cas.web.interface.InterfaceControl
 import org.specs2.mutable.Specification
 import spray.testkit.Specs2RouteTest
 import spray.http._
 import StatusCodes._
-// import web.service._
 
-class ServiceControllSpec extends Specification with Specs2RouteTest with ServiceControll {
+class InterfaceControlSpec extends Specification with Specs2RouteTest with InterfaceControl {
   def actorRefFactory = system
   
-  "ServiceControll" should {
+  "InterfaceControl" should {
 
     "return a greeting for GET requests to the root path" in {
       Get() ~> route ~> check {

@@ -1,12 +1,12 @@
-package web.pages
+package cas.web.pages
 
 import scala.io.Source
 import spray.routing._
 import spray.json._
 import Directives._
 import utils._
-import web.model._
-import web.model.UserSettingsProtocol._
+import cas.web.model._
+import cas.web.model.UserSettingsProtocol._
 
 object TestPage {
 

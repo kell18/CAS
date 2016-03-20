@@ -1,6 +1,7 @@
 package cas.service
 
 import akka.actor.Actor
+import akka.pattern.pipe
 import cas.subject.Subject
 
 object RoutingScheme {
@@ -11,6 +12,8 @@ object RoutingScheme {
 
 class AContentRouter(dealer: ContentDealer) extends Actor {
   import RoutingScheme._
+  import cas.web.interface.ImplicitActorSystem._
+  import system.dispatcher
 
   override def receive = {
     // TODO: Handle service not available

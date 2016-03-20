@@ -1,40 +1,35 @@
-package web.interface
+package cas.web.interface
 
 import java.io._
 import java.util.Calendar
-
-import scala.io.Source
+import cas.web.dealers.VkApiDealer
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import scala.util.parsing.json._
-import scala.util.{ Try, Success, Failure }
-
 import akka.actor.{ActorSystem, Props}
 import akka.io.IO
 import akka.pattern.ask
 import akka.util.Timeout
-
 import spray.can.Http
 import spray.routing.SimpleRoutingApp
-import spray.json._
-
-import web.model.UserSettingsProtocol._
-import web.model._
-import utils._
+import cas.utils._
 import cas.subject._
 import cas.estimation._
 import cas.subject.components._
 
 import scala.util.{ Try, Success, Failure }
 
+object ImplicitActorSystem {
+  implicit val system = ActorSystem("web-service")
+}
+
 object Boot extends App with SimpleRoutingApp {
-	implicit val timeout = Timeout(5.seconds)
+  import ImplicitActorSystem._
 
-	implicit val system = ActorSystem("web-service")
+	implicit val timeout = Timeout(10.seconds)
+	val interface = system.actorOf(Props[AInterfaceControl], "interface-controll")
 
-	val interface = system.actorOf(Props[AInterfaceControll], "interface-controll")
-
-  val addr = Utils.configs.getString("cas.interface");
-  val port = Utils.configs.getInt("cas.port");
+  val addr = Utils.configs.getString("cas.interface")
+  val port = Utils.configs.getInt("cas.port")
 
   // TODO: Move to Specs.
   // val s = new Subject(Set(
@@ -55,7 +50,18 @@ object Boot extends App with SimpleRoutingApp {
   // List[EstimatorUnit] estimators = // ... 
   // val actuality = estimators.foldLeft(0)((l, r) => l + r.v * r.w)
 
+  val api = new VkApiDealer(-29534144, None)
+  // api.estimateChunkLim.foreach(l => println("Lim = " + l))
+
+  val chunk = api.pullSubjectsChunk
+  chunk onFailure { case ex: Throwable => println("Fail: " + ex.getLocalizedMessage + "  StTr: " + ex.getStackTrace) }
+  for {
+    c <- chunk
+    subj <- c
+    likes <- subj.getComponent[Likability].right
+  } { Utils.writeToFile(Utils.dataPath + "/tmp.txt", likes.value.toString); println("descr.text: " + likes.value.toString) }
+
   println("Starting CAS on " + addr + ":" + port)
 
-	// IO(Http) ? Http.Bind(interface, addr, port)
+	IO(Http) ? Http.Bind(interface, addr, port)
 }

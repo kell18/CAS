@@ -1,4 +1,4 @@
-package web.interface
+package cas.web.interface
 
 import akka.actor.Actor
 import spray.routing._
@@ -6,9 +6,9 @@ import spray.http._
 import spray.http.MediaTypes._
 import spray.util.LoggingContext
 import spray.http.StatusCodes._
-import web.pages._
+import cas.web.pages._
 
-trait InterfaceControll extends HttpService {
+trait InterfaceControl extends HttpService {
 
   val route = respondWithMediaType(`text/html`) {
       IndexPage("") ~
@@ -26,7 +26,7 @@ trait InterfaceControll extends HttpService {
 
 // we don't implement our route structure directly in the service actor because
 // we want to be able to test it independently, without having to spin up an actor
-class AInterfaceControll extends Actor with InterfaceControll {
+class AInterfaceControl extends Actor with InterfaceControl {
 
   // the HttpService trait defines only one abstract member, which
   // connects the services environment to the enclosing actor or test

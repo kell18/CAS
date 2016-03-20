@@ -1,4 +1,4 @@
-package web.pages
+package cas.web.pages
 
 import spray.routing._
 import Directives._
