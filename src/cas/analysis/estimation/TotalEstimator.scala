@@ -6,6 +6,7 @@ import scalaz._
 import scalaz.Scalaz._
 
 class TotalEstimator(val estimators: List[ActualityEstimator]) extends ActualityEstimator(new EstimatorConfigs()) {
+
   override def estimateActuality(subj: Subject): Either[String, Double] = {
     var totalEstim = 0.0
     var missComponents: List[String] = Nil
@@ -14,6 +15,7 @@ class TotalEstimator(val estimators: List[ActualityEstimator]) extends Actuality
       if (actuality.isRight) totalEstim += actuality.right.get * estim.cfg.weight
       else missComponents = estim.getClass.getSimpleName + "." + actuality.left.get :: missComponents
     }
-    if (missComponents.isEmpty) Right(totalEstim) else Left(missComponents.mkString(", "))
+    if (missComponents.isEmpty) Right(totalEstim) else Left("Missing components: " + missComponents.mkString(", "))
   }
+
 }

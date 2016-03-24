@@ -2,7 +2,9 @@ package cas.web.interface
 
 import java.io._
 import java.util.Calendar
+
 import cas.web.dealers.VkApiDealer
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import akka.actor.{ActorSystem, Props}
@@ -14,9 +16,11 @@ import spray.routing.SimpleRoutingApp
 import cas.utils._
 import cas.subject._
 import cas.estimation._
+import cas.service.AContentService
 import cas.subject.components._
 
-import scala.util.{ Try, Success, Failure }
+import scala.concurrent.Await
+import scala.util.{Failure, Success, Try}
 
 object ImplicitActorSystem {
   implicit val system = ActorSystem("web-service")
@@ -47,21 +51,13 @@ object Boot extends App with SimpleRoutingApp {
   // val estimator = new LoyalityEstimator(25, 3)
   // println("Loyality " + estimator.estimateActuality(s).get)
 
-  // List[EstimatorUnit] estimators = // ... 
+  // List[EstimatorUnit] estimators = // ...
   // val actuality = estimators.foldLeft(0)((l, r) => l + r.v * r.w)
 
-  val api = new VkApiDealer(-29534144, None)
-  // api.estimateChunkLim.foreach(l => println("Lim = " + l))
+  val dealer = new VkApiDealer(-29534144, None)
+  val estimator = new TotalEstimator(new LoyaltyEstimator(new LoyaltyConfigs(5, 0)) :: Nil)
 
-  val chunk = api.pullSubjectsChunk
-  chunk onFailure { case ex: Throwable => println("Fail: " + ex.getLocalizedMessage + "  StTr: " + ex.getStackTrace) }
-  for {
-    c <- chunk
-    subj <- c
-    likes <- subj.getComponent[Likability].right
-  } { Utils.writeToFile(Utils.dataPath + "/tmp.txt", likes.value.toString); println("descr.text: " + likes.value.toString) }
-
-  println("Starting CAS on " + addr + ":" + port)
+  val service = Props(new AContentService(dealer, estimator))
 
 	IO(Http) ? Http.Bind(interface, addr, port)
 }

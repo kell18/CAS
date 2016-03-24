@@ -1,28 +1,45 @@
 package cas.service
 
-import akka.actor.Actor
+import akka.actor.{Actor, ActorRef}
 import akka.pattern.pipe
 import cas.subject.Subject
+import scala.collection.mutable
+import scala.collection.mutable.Queue
 
-object RoutingScheme {
+object AContentRouter {
   case object PullSubjects
-  case class PulledSubjects(subjs: List[Subject])
-  case class PushEstimations(estims: List[Estimation])
+  case class Subjects(subjs: List[Subject])
+  case class Estimations(estims: List[Estimation])
 }
 
-class AContentRouter(dealer: ContentDealer) extends Actor {
-  import RoutingScheme._
-  import cas.web.interface.ImplicitActorSystem._
-  import system.dispatcher
+class AContentRouter(producer: ActorRef) extends Actor {
+  import AContentRouter._
+
+  val pulledSubjs = mutable.Queue.empty[Subjects]
+  val waitingWorkers = mutable.Queue.empty[ActorRef]
+
+  override def preStart = {
+    super.preStart()
+    producer ! PullSubjects
+  }
 
   override def receive = {
-    // TODO: Handle service not available
     case PullSubjects => {
-      dealer.pullSubjectsChunk.map(PulledSubjects).pipeTo(sender())
+      if (pulledSubjs.isEmpty) waitingWorkers.enqueue(sender)
+      else {
+        sender ! pulledSubjs.dequeue
+        producer ! PullSubjects
+      }
     }
 
-    case PushEstimations(estims) => {
-      dealer.pushEstimationsChunk(estims)
+    case Subjects(chunk) => {
+      if (waitingWorkers.isEmpty) pulledSubjs.enqueue(Subjects(chunk))
+      else {
+        waitingWorkers.dequeue ! Subjects(chunk)
+        producer ! PullSubjects
+      }
     }
+
+    case Estimations(estims) => producer forward Estimations(estims)
   }
 }

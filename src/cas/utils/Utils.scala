@@ -4,6 +4,8 @@ import java.io._
 import com.typesafe.config._
 
 object Utils {
+  type ErrorMsg = String
+
   val dataPath = "resources/data"
   val confPath = "resources/conf"
   val webModelPath = dataPath + "/web.model"
@@ -13,7 +15,6 @@ object Utils {
   )
 
   def writeToFile(path: String, s: String): Unit = {
-    println ("Write")
     val pw = new java.io.PrintWriter(new File(path))
     try { pw.write(s) } catch { case ex: Throwable => println ("Ex: " + ex.getMessage) } finally pw.close()
   }

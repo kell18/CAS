@@ -1,3 +1,3 @@
 package cas.subject.components
 
-class Virality(val value: Double) extends Component
+case class Virality(value: Double) extends Component

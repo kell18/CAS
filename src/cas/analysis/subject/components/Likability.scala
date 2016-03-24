@@ -1,3 +1,3 @@
 package cas.subject.components
 
-class Likability(val value: Double) extends Component
+case class Likability(value: Double) extends Component

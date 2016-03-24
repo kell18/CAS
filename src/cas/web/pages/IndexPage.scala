@@ -15,7 +15,7 @@ object IndexPage {
     get {
       parameter("threshold".?) { threshold =>
         lazy val fileSettings = Try(UserSettings.read.get.parseJson.convertTo[UserSettings])
-        val usrSettings = if (!threshold.isEmpty) Try(UserSettings(threshold.get.toInt)) else fileSettings
+        val usrSettings = if (threshold.isDefined) Try(UserSettings(threshold.get.toInt)) else fileSettings
         val settings = usrSettings getOrElse UserSettings(20)
         UserSettings.update(settings.toJson.prettyPrint)
 
