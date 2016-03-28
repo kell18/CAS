@@ -2,19 +2,13 @@ organization  := "edu.kpfu.itis"
 
 version       := "0.1"
 
-scalaVersion  := "2.10.5"
-
-scalaSource in Compile := baseDirectory.value / "src"
-
-scalaSource in Test := baseDirectory.value / "specs" / "tests"
+scalaVersion  := "2.11.7"
 
 scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8")
 
-libraryDependencies += "org.scala-lang" % "scala-reflect" % "2.10.6"
+libraryDependencies += "org.scala-lang" % "scala-reflect" % "2.11.7"
 
-libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.1.1"
-
-libraryDependencies += "com.github.nscala-time" %% "nscala-time" % "2.10.0"
+ libraryDependencies += "com.github.nscala-time" %% "nscala-time" % "2.10.0"
 
 libraryDependencies ++= {
   val akkaV = "2.3.9"
