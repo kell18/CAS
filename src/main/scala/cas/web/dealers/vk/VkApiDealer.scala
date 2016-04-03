@@ -2,18 +2,20 @@ package cas.web.dealers.vk
 
 import akka.actor.ActorSystem
 import cas.analysis.subject.Subject
+import cas.analysis.subject.Subject.Subjects
 import cas.analysis.subject.components._
 import cas.service.{ContentDealer, Estimation}
 import cas.utils.Web
 import cas.utils.Mathf.sec2Millis
 import cas.web.dealers.vk.VkApiProtocol._
 import cas.utils.StdImplicits._
+import cas.utils.Utils._
 import spray.client.pipelining._
 import spray.httpx.SprayJsonSupport._ // Don't dell!
 import org.joda.time.DateTime
 import scala.collection.mutable
 import scala.concurrent.{Await, Future}
-import scala.util.{Failure, Try}
+import scala.util.Try
 import spray.json._
 import scala.concurrent.duration._
 
@@ -28,8 +30,8 @@ object VkApiDealer {
   val filterableCount = 10
   val queriesPerSec = 2
 
-  val clientId = "5369112"
-  val clientSecret = "fFZQIwuIPR5bXxRW0c0I"
+  val clientId = ""
+  val clientSecret = ""
   val scope = "wall,groups,stats,friends"
 
   def apply(rawConfigs: String)(implicit system: ActorSystem) = for {
@@ -47,15 +49,16 @@ class VkApiDealer(cfg: VkApiConfigs)(implicit val system: ActorSystem) extends C
 
   override def estimatedQueryFrequency = 1.second / queriesPerSec
 
-  override def pullSubjectsChunk: Future[Either[String, List[Subject]]] = {
+  override def pullSubjectsChunk: Future[Either[ErrorMsg, Subjects]] = {
     val pipeline = sendReceive ~> unmarshal[VkFallible[VkResponse[VkComment]]]
     for {
       errorOrPost <- pullTopPost
     } yield for {
       post <- errorOrPost.left.map(_.getMessage)
-      respF = Await.result(pipeline(Get(buildRequest("wall.getComments", "access_token" -> cfg.token ::
-        "post_id" -> post.id.toString :: "need_likes" -> "1" :: defaultParams))), 10.seconds)
+      respF = Await.result(pipeline(Get(buildRequest("wall.getComments", "post_id" -> post.id.toString ::
+        "need_likes" -> "1" :: defaultParams))), 10.seconds)
       resp <- respF.errorOrResp.left.map(_.getMessage)
+      _ = println("resp: " + resp)
     } yield for {
       comment <- resp.items
     } yield Subject(List(
@@ -67,7 +70,7 @@ class VkApiDealer(cfg: VkApiConfigs)(implicit val system: ActorSystem) extends C
     ))
   }
 
-  override def pushEstimation(estimation: Estimation): Future[Either[String, Any]] = Future {
+  override def pushEstimation(estimation: Estimation): Future[Either[ErrorMsg, Any]] = Future {
     val pipeline = sendReceive ~> unmarshal[VkFallible[VkSimpleResponse]]
     if (estimation.actuality < actualityThreshold) {
       for {

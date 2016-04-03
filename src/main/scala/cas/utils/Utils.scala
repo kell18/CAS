@@ -5,6 +5,7 @@ import com.typesafe.config._
 
 object Utils {
   type ErrorMsg = String
+  type Fallible[T] = Either[ErrorMsg, T]
 
   val dataPath = "resources/data"
   val confPath = "resources/conf"

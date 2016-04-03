@@ -19,6 +19,7 @@ object Files {
     str <- Try(src.mkString) eventually { src.close }
   } yield str
 
+  // TODO: Bug here - closing stream
   def readFileLines(path: String) = {
     val source = scala.io.Source.fromFile(path)
     Try { source.getLines } eventually { source.close }

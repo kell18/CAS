@@ -14,3 +14,7 @@ case class Subject(components: List[_ <: Component]) extends Component {
 
   def getComponents[T <: Component : ClassTag](implicit ev: ClassTag[T]): Either[String, List[T]] = ???
 }
+
+object Subject {
+  type Subjects = List[Subject]
+}

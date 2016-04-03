@@ -3,19 +3,22 @@ package cas.service
 import akka.actor.{Actor, ActorRef}
 import akka.pattern.pipe
 import cas.analysis.subject.Subject
+import cas.analysis.subject.Subject.Subjects
+import cas.service.Estimation.Estimations
+
 import scala.collection.mutable
 import scala.collection.mutable.Queue
 
 object AContentRouter {
   case object PullSubjects
-  case class Subjects(subjs: List[Subject])
-  case class Estimations(estims: List[Estimation])
+  case class PulledSubjects(subjs: Subjects)
+  case class PushingEstimations(estims: Estimations)
 }
 
 class AContentRouter(producer: ActorRef) extends Actor {
   import AContentRouter._
 
-  val pulledSubjs = mutable.Queue.empty[Subjects]
+  val pulledSubjs = mutable.Queue.empty[PulledSubjects]
   val waitingWorkers = mutable.Queue.empty[ActorRef]
 
   override def preStart = {
@@ -33,15 +36,15 @@ class AContentRouter(producer: ActorRef) extends Actor {
       }
     }
 
-    case Subjects(chunk) => {
+    case PulledSubjects(chunk) => {
       // println("Rout - Subjects - waitingWorkers: " + waitingWorkers.length)
-      if (waitingWorkers.isEmpty) pulledSubjs.enqueue(Subjects(chunk))
+      if (waitingWorkers.isEmpty) pulledSubjs.enqueue(PulledSubjects(chunk))
       else {
-        waitingWorkers.dequeue ! Subjects(chunk)
+        waitingWorkers.dequeue ! PulledSubjects(chunk)
         producer ! PullSubjects
       }
     }
 
-    case Estimations(estims) => producer forward Estimations(estims)
+    case PushingEstimations(estims) => producer forward PushingEstimations(estims)
   }
 }

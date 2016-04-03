@@ -4,11 +4,9 @@ import spray.http._
 import spray.http.MediaTypes.`application/json`
 import spray.httpx.unmarshalling.Unmarshaller
 import spray.json._
-
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 import spray.httpx.ResponseTransformation._
-
 import scala.collection.Map
 
 object VkApiProtocol extends DefaultJsonProtocol {

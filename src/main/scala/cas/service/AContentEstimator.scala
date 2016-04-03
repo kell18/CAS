@@ -18,8 +18,8 @@ class AContentEstimator(estimator: TotalEstimator, router: ActorRef) extends Act
   }
 
   override def receive = {
-    case Subjects(chunk) => {
-      Future { makeEstimations(chunk) }.map(Estimations).pipeTo(sender)
+    case PulledSubjects(chunk) => {
+      Future { makeEstimations(chunk) }.map(PushingEstimations).pipeTo(sender)
       router ! PullSubjects
     }
     case x => log.warning("Unexpected case type in content estimator: " + x)

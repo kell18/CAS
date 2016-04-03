@@ -2,8 +2,8 @@ package cas.service
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import cas.analysis.estimation._
+import cas.service.Estimation.Estimations
 import cas.utils.Utils.ErrorMsg
-
 import scala.util.{Failure, Success}
 
 /** Manages content flow btw dealer and router
@@ -38,17 +38,17 @@ class AContentService(dealer: ContentDealer, estimator: TotalEstimator) extends 
     workers.foreach(w => context.stop(w))
   }
 
-  def manage(consumers: List[ActorRef], estims: List[Estimation]): Receive = {
+  def manage(consumers: List[ActorRef], estims: Estimations): Receive = {
 
     case PullSubjects => context.become(manage(sender :: consumers, estims))
 
-    case Estimations(chunk) => context.become(manage(consumers, chunk ::: estims))
+    case PushingEstimations(chunk) => context.become(manage(consumers, chunk ::: estims))
 
     case PullTick => consumers match {
       case Nil => Unit
       case c::cs => dealer.pullSubjectsChunk.onComplete {
         case Success(Right(chunk)) => {
-          c ! Subjects(chunk)
+          c ! PulledSubjects(chunk)
           context.become(manage(cs, estims))
         }
         case Success(Left(err)) =>
