@@ -9,7 +9,7 @@ import akka.actor.{ActorRef, Props}
 import akka.pattern.ask
 import akka.util.Timeout
 import cas.analysis.estimation.{LoyaltyConfigs, LoyaltyEstimator, TotalEstimator}
-import cas.service.AContentService
+import cas.service.{AProducer$, AServiceControl}
 import cas.utils._
 import cas.web.dealers.DealersFactory
 import cas.web.model._
@@ -17,40 +17,44 @@ import spray.json._
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.util.control.NonFatal
 
 object IndexPage {
   import cas.web.interface.ImplicitActorSystem._
-  import cas.web.interface.AServiceControl._
+  import scala.concurrent.ExecutionContext.Implicits.global
+  import AServiceControl._
   import UsingDealerProtocol._
-  implicit val timeout = Timeout(10.seconds)
+  implicit val timeout = Timeout(3.seconds)
 
 	def apply(pagePath: String, serviceControl: ActorRef) = path(pagePath) {
     get {
       parameter("isRun".as[Boolean].?) { isRunOpt =>
-        val contentServiceOpt = for {
-          isRun <- isRunOpt
-          if isRun
-        } yield for {
-          file <- Files.readFile(Files.currentDealer)
-          currDealer <- Try(file.parseJson.convertTo[UsingDealer])
-        } yield serviceControl ! Start(currDealer)
+        val contentServiceOpt = isRunOpt.map { isRun =>
+          if (isRun) for {
+            file <- Files.readFile(Files.currentDealer)
+            currDealer <- Try(file.parseJson.convertTo[UsingDealer])
+          } yield serviceControl ! Start(currDealer)
+          else {
+            Success(serviceControl ! Stop)
+          }
+        }
 
-        complete {
-          <html>
-            <body>
-              <h2>Content Analysis System</h2>
-              <span>Status: </span>
-              {
-                if (contentServiceOpt.isDefined) {
-                  if (contentServiceOpt.get.isSuccess) "Active"
-                  else "Inactive (failed to run, try again)"
-                } else "Inactive"
-              }<br/>
-              <a href="/?isRun=true">Start</a> <a href="/?isRun=false">Stop</a>
-            </body>
-          </html>
+        onComplete((serviceControl ? GetStatus).mapTo[Status]) {
+          case Success(serviceStat) => complete(getHtml(serviceStat.status.toString))
+          case Failure(NonFatal(ex)) => complete(getHtml(s"Application malformed: `${ex.getMessage}`"))
         }
       }
     }
+  }
+
+  def getHtml(status: String) = {
+    <html>
+      <body>
+        <h2>Content Analysis System</h2>
+        <span>Status: { status }</span>
+        <br/>
+        <a href="/?isRun=true">Start</a> <a href="/?isRun=false">Stop</a>
+      </body>
+    </html>
   }
 }

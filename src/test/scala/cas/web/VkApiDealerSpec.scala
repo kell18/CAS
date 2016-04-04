@@ -2,14 +2,14 @@ package cas.web
 
 import cas.analysis.subject.components.ID
 import cas.analysis.subject.Subject
-import cas.service.{ContentDealer, Estimation}
+import cas.service.ARouter.Estimation
+import cas.service.ContentDealer
 import cas.web.dealers.DealersFactory
 import cas.web.dealers.vk.VkApiDealer
 import cas.web.dealers.vk.VkApiProtocol.VkApiConfigs
 import org.specs2.mutable.Specification
 import org.specs2.time.NoTimeConversions
 import utils.AkkaToSpec2Scope
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
@@ -31,7 +31,7 @@ class VkApiDealerSpec extends Specification with NoTimeConversions {
 
     "pull subjects chunk with essential components" in new AkkaToSpec2Scope {
       val dealer = DealersFactory.buildDealer(VkApiDealer.id).get
-      val subjects = Await.result(dealer.pullSubjectsChunk, 10.seconds).right.getOrElse(List[Subject]())
+      val subjects = Await.result(dealer.pullSubjectsChunk, 10.seconds).right.get
       subjects.length must be greaterThan 0
 
       val obj = subjects.head.getComponent[Subject].right.toOption

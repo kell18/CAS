@@ -69,9 +69,10 @@ object VkAuth {
     }
   }
 
+  /*(domain + returnToPage)*/
   def authUrl(returnToPage: String) = Web.buildRequest("https://oauth.vk.com/")("authorize")(
-    "redirect_uri" -> (domain + returnToPage) :: "client_id" -> clientId :: "scope" -> scope :: "display" -> "popup" ::
-    "response_type" -> "code" :: "v" -> apiVersion :: Nil)
+    "redirect_uri" -> "https://oauth.vk.com/blank.html":: "client_id" -> clientId :: "scope" -> scope :: "display" -> "popup" ::
+    "response_type" -> "token" :: "revoke" -> "1" :: "v" -> apiVersion :: Nil)
 
   def pullToken(code: String, path: String) = for {
     resp <- pipeline(Get(Web.buildRequest("https://oauth.vk.com/")("access_token")("client_id" -> clientId ::

@@ -2,17 +2,17 @@ package cas.web.dealers.vk
 
 import akka.actor.ActorSystem
 import cas.analysis.subject.Subject
-import cas.analysis.subject.Subject.Subjects
 import cas.analysis.subject.components._
-import cas.service.{ContentDealer, Estimation}
-import cas.utils.Web
+import cas.service.ARouter.Estimation
+import cas.service.ContentDealer
+import cas.utils.{Utils, Web}
 import cas.utils.Mathf.sec2Millis
 import cas.web.dealers.vk.VkApiProtocol._
 import cas.utils.StdImplicits._
-import cas.utils.Utils._
+import cas.utils.UtilAliases._
 import spray.client.pipelining._
-import spray.httpx.SprayJsonSupport._ // Don't dell!
-import org.joda.time.DateTime
+import spray.httpx.SprayJsonSupport._
+import org.joda.time.{DateTime, Period}
 import scala.collection.mutable
 import scala.concurrent.{Await, Future}
 import scala.util.Try
@@ -26,13 +26,13 @@ object VkApiDealer {
   val apiUrl = "https://api.vk.com/method/"
   val apiVersion = "5.50"
 
-  val actualityThreshold = 0.3
+  val actualityThreshold = 0.5
   val filterableCount = 10
-  val queriesPerSec = 2
+  val queriesPerSec = 3
 
-  val clientId = ""
-  val clientSecret = ""
-  val scope = "wall,groups,stats,friends"
+  val clientId = "5369112"
+  val clientSecret = "fFZQIwuIPR5bXxRW0c0I"
+  val scope = "wall,groups,stats,friends,offline"
 
   def apply(rawConfigs: String)(implicit system: ActorSystem) = for {
     c <- Try(rawConfigs.parseJson.convertTo[VkApiConfigs])
@@ -44,6 +44,7 @@ class VkApiDealer(cfg: VkApiConfigs)(implicit val system: ActorSystem) extends C
   import VkApiDealer._
   import system.dispatcher
 
+   // scope = "wall,groups,stats,friends"
   val postsToSift = new mutable.Queue[VkPost]()
   val defaultParams = "owner_id" -> cfg.ownerId.toString :: "v" -> apiVersion :: Nil
 
@@ -58,14 +59,17 @@ class VkApiDealer(cfg: VkApiConfigs)(implicit val system: ActorSystem) extends C
       respF = Await.result(pipeline(Get(buildRequest("wall.getComments", "post_id" -> post.id.toString ::
         "need_likes" -> "1" :: defaultParams))), 10.seconds)
       resp <- respF.errorOrResp.left.map(_.getMessage)
-      _ = println("resp: " + resp)
     } yield for {
       comment <- resp.items
+//      _ = if (comment.text.startsWith("_test")) println("Pull: " +
+//        comment.text +
+//        new Period(new DateTime(comment.date * sec2Millis, Utils.timeZone), DateTime.now(Utils.timeZone)).toStandardSeconds
+//      ) else {}
     } yield Subject(List(
         ID(comment.id.toString),
         Subject(List(ID(post.id.toString))),
         Likability(comment.likes.count.toDouble),
-        CreationDate(new DateTime(comment.date * sec2Millis)),
+        CreationDate(new DateTime(comment.date * sec2Millis, Utils.timeZone)),
         Description(comment.text)
     ))
   }
@@ -77,6 +81,7 @@ class VkApiDealer(cfg: VkApiConfigs)(implicit val system: ActorSystem) extends C
         id <- estimation.subj.getComponent[ID]
         post <- estimation.subj.getComponent[Subject]
         postId <- post.getComponent[ID]
+       //  _ = println("Push: " + estimation.subj.getComponent[Description].get.text)
         respF <- Try(Await.result(pipeline(Get(buildRequest("wall.deleteComment", "access_token" -> cfg.token ::
           "comment_id" -> id.value :: defaultParams))), 10.seconds)).toEither.left.map(_.getMessage)
         resp <- respF.errorOrResp.left.map(_.getMessage)

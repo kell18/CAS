@@ -7,7 +7,9 @@ import cas.analysis.subject.components.ID
 import cas.analysis.estimation._
 import cas.analysis.subject.Subject
 import cas.analysis.subject.components.{CreationDate, Likability}
-import org.joda.time.DateTime
+import cas.service.ARouter.Estimation
+import cas.service.AServiceControl.{Init, Stop}
+import org.joda.time.{DateTime, Period}
 import org.specs2.mutable.Specification
 import org.specs2.time.NoTimeConversions
 import utils.AkkaToSpec2Scope
@@ -20,11 +22,13 @@ class ContentServiceSpec extends Specification with NoTimeConversions {
 
   "ServiceSpecs" should {
 
-    "Push same subjects as received in pullSubjectsChunk" in new AkkaToSpec2Scope {
-      val estimator = new TotalEstimator(new LoyaltyEstimator(LoyaltyConfigs(6.0, 0.0)) :: Nil)
+    "Push proper estims and subjs as received in pullSubjectsChunk" in new AkkaToSpec2Scope {
+      val estimator = new TotalEstimator(new LoyaltyEstimator(LoyaltyConfigs(Map(
+        new Period().withMillis(50) -> 2.0))) :: Nil)
+
       val dealer = new ContentDealer {
-        val pullingSubjects = Subject(ID("ID1") :: Likability(10.0) :: CreationDate(DateTime.now()) ::
-          Subject(ID("ID2") :: Likability(5.0) :: Nil) :: Nil) :: Nil
+        val pullingSubjects = Subject(ID("ID1") :: Likability(20.0) :: CreationDate(DateTime.now()) ::
+          Subject(ID("ID2") :: Nil) :: Nil) :: Nil
         var pushedEstimations = List[Estimation]()
         var isPulled = false
         var isPushed = false
@@ -35,7 +39,7 @@ class ContentServiceSpec extends Specification with NoTimeConversions {
           if (isPulled) Future { throw new Exception("Pull only once for testing") }
           else {
             isPulled = true
-            Future { Right(pullingSubjects) }
+            Future { Thread.sleep(70L); Right(pullingSubjects) }
           }
         }
 
@@ -51,10 +55,15 @@ class ContentServiceSpec extends Specification with NoTimeConversions {
         dealer.pushedEstimations
       }
 
-      val service = system.actorOf(Props(new AContentService(dealer, estimator)))
-      val subjects = Await.result(waitForPushF, Duration("10 seconds")).flatten(e => e.subj :: Nil)
+      val service = system.actorOf(Props(new AServiceControl))
+      service ! Init(dealer)
+      val estims = Await.result(waitForPushF, Duration("10 seconds"))
+      service ! Stop
       system.stop(service)
-      subjects must containTheSameElementsAs(dealer.pullingSubjects)
+
+      val subjs = estims.flatten(e => e.subj :: Nil)
+      subjs must containTheSameElementsAs(dealer.pullingSubjects)
+      estims.head.actuality must beGreaterThan(0.5)
     }
   }
 }

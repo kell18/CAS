@@ -3,20 +3,20 @@ package cas.service
 import akka.actor.{Actor, ActorRef}
 import akka.pattern.pipe
 import cas.analysis.subject.Subject
-import cas.analysis.subject.Subject.Subjects
-import cas.service.Estimation.Estimations
-
+import cas.utils.UtilAliases._
 import scala.collection.mutable
 import scala.collection.mutable.Queue
 
-object AContentRouter {
+object ARouter {
   case object PullSubjects
   case class PulledSubjects(subjs: Subjects)
   case class PushingEstimations(estims: Estimations)
+
+  case class Estimation(subj: Subject, actuality: Double)
 }
 
-class AContentRouter(producer: ActorRef) extends Actor {
-  import AContentRouter._
+class ARouter(producer: ActorRef) extends Actor {
+  import ARouter._
 
   val pulledSubjs = mutable.Queue.empty[PulledSubjects]
   val waitingWorkers = mutable.Queue.empty[ActorRef]
@@ -28,7 +28,7 @@ class AContentRouter(producer: ActorRef) extends Actor {
 
   override def receive = {
     case PullSubjects => {
-      // println("Rout - PullSubjects - pulledSubjs: " + pulledSubjs.length)
+      // println("Rout - PullSubjects: " + pulledSubjs.length)
       if (pulledSubjs.isEmpty) waitingWorkers.enqueue(sender)
       else {
         sender ! pulledSubjs.dequeue
@@ -37,7 +37,7 @@ class AContentRouter(producer: ActorRef) extends Actor {
     }
 
     case PulledSubjects(chunk) => {
-      // println("Rout - Subjects - waitingWorkers: " + waitingWorkers.length)
+      // println("Rout - waitingWorkers: " + waitingWorkers.length)
       if (waitingWorkers.isEmpty) pulledSubjs.enqueue(PulledSubjects(chunk))
       else {
         waitingWorkers.dequeue ! PulledSubjects(chunk)
@@ -45,6 +45,6 @@ class AContentRouter(producer: ActorRef) extends Actor {
       }
     }
 
-    case PushingEstimations(estims) => producer forward PushingEstimations(estims)
+    case estims: PushingEstimations => producer forward estims
   }
 }

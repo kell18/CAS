@@ -5,7 +5,7 @@ import akka.io.IO
 import akka.pattern.ask
 import akka.util.Timeout
 import cas.analysis.estimation._
-import cas.service.AContentService
+import cas.service.AProducer$
 import cas.utils._
 import cas.web.dealers.vk.VkApiDealer
 import com.typesafe.config.ConfigFactory

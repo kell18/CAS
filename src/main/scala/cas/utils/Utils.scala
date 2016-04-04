@@ -1,15 +1,17 @@
 package cas.utils
 
 import java.io._
+import cas.analysis.subject.Subject
+import cas.service.ARouter.Estimation
 import com.typesafe.config._
+import org.joda.time.DateTimeZone
 
 object Utils {
-  type ErrorMsg = String
-  type Fallible[T] = Either[ErrorMsg, T]
-
   val dataPath = "resources/data"
   val confPath = "resources/conf"
   val webModelPath = dataPath + "/web.model"
+
+  val timeZone = DateTimeZone.forOffsetHours(+3)
 
   val configs = ConfigFactory.load(
     ConfigFactory.parseFile(new File(confPath + "/application.conf"))
@@ -27,4 +29,12 @@ object Utils {
     println(label + " Elapsed time: " + ((t1 - t0) * 0.000001) + "ms")
     result
   }
+}
+
+object UtilAliases {
+  type ErrorMsg = String
+  type Fallible[T] = Either[ErrorMsg, T]
+
+  type Subjects = List[Subject]
+  type Estimations = List[Estimation]
 }

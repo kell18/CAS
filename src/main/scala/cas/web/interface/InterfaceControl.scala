@@ -2,7 +2,7 @@ package cas.web.interface
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import cas.analysis.estimation.{LoyaltyConfigs, LoyaltyEstimator, TotalEstimator}
-import cas.service.{AContentService, ContentDealer}
+import cas.service.{AProducer$, AServiceControl, ContentDealer}
 import cas.web.dealers.DealersFactory
 import cas.web.model.UsingDealer
 import spray.routing._

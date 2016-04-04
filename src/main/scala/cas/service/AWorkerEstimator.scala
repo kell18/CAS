@@ -4,11 +4,13 @@ import akka.actor.{Actor, ActorLogging, ActorRef}
 import akka.pattern.pipe
 import cas.analysis.estimation._
 import cas.analysis.subject._
+import cas.analysis.subject.components.Description
+
 import scala.annotation.tailrec
 import scala.concurrent.Future
 
-class AContentEstimator(estimator: TotalEstimator, router: ActorRef) extends Actor with ActorLogging {
-  import AContentRouter._
+class AWorkerEstimator(estimator: TotalEstimator, router: ActorRef) extends Actor with ActorLogging {
+  import ARouter._
   import cas.web.interface.ImplicitActorSystem._
   import system.dispatcher
 
@@ -22,7 +24,7 @@ class AContentEstimator(estimator: TotalEstimator, router: ActorRef) extends Act
       Future { makeEstimations(chunk) }.map(PushingEstimations).pipeTo(sender)
       router ! PullSubjects
     }
-    case x => log.warning("Unexpected case type in content estimator: " + x)
+    case x => log.warning("[AContentEstimator] Unexpected case type: " + x)
   }
 
   @tailrec
