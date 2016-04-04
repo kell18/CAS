@@ -1,3 +1,5 @@
+enablePlugins(JavaAppPackaging)
+
 organization  := "edu.kpfu.itis"
 
 version       := "0.1"
@@ -8,7 +10,8 @@ scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8")
 
 libraryDependencies += "org.scala-lang" % "scala-reflect" % "2.11.7"
 
- libraryDependencies += "com.github.nscala-time" %% "nscala-time" % "2.10.0"
+libraryDependencies += "com.github.nscala-time" %% "nscala-time" % "2.10.0"
+
 
 libraryDependencies ++= {
   val akkaV = "2.3.9"
