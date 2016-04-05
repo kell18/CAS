@@ -56,8 +56,8 @@ class AProducer(dealer: ContentDealer, estimator: TotalEstimator) extends Actor 
           case Nil => changeContext(consumers, chunks)
           case e::es => dealer.pushEstimation(e) onComplete {
             case Success(Right(_)) => changeContext(consumers, es :: chunks)
-            case Success(Left(err)) => log.error(err)
-            case Failure(NonFatal(ex)) => logWarning(ex)
+            case Success(Left(err)) => {log.error(err); changeContext(consumers, es :: chunks)}
+            case Failure(NonFatal(ex)) => {logWarning(ex); changeContext(consumers, es :: chunks)}
           }
         }
       }
