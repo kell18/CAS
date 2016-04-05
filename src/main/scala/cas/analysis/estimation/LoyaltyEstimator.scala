@@ -22,7 +22,7 @@ class LoyaltyEstimator(cfg: LoyaltyConfigs) extends ActualityEstimator(cfg) {
   def estimateLoyalty(likes: Double, repost: Double, subjDate: DateTime, subj: Subject) = {
     val pastTime = new Period(subjDate, DateTime.now(Utils.timeZone))
     val isFail = cfg.scores.exists { case(period, minScore) =>
-      pastTime.getSeconds > period.getSeconds && (likes + repost) < minScore
+      pastTime.toStandardSeconds.getSeconds > period.toStandardSeconds.getSeconds && (likes + repost) < minScore
     }
     if (isFail) 0.0 else 1.0
   }
