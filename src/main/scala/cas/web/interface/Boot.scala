@@ -25,7 +25,7 @@ object Boot extends App with SimpleRoutingApp {
   val interface = system.actorOf(Props[AInterfaceControl], "interface-control")
 
   val config =  ConfigFactory.load()
-  val addr = config.getString("cas.interface")
+  val addr = "0.0.0.0" // config.getString("cas.interface")
   val port = config.getInt("cas.port")
 
   println(s"Starting server on $addr:$port")
