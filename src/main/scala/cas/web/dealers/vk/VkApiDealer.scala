@@ -81,7 +81,9 @@ class VkApiDealer(cfg: VkApiConfigs)(implicit val system: ActorSystem) extends C
         id <- estimation.subj.getComponent[ID]
         post <- estimation.subj.getComponent[Subject]
         postId <- post.getComponent[ID]
-       //  _ = println("Push: " + estimation.subj.getComponent[Description].get.text)
+       _ = println("Deleting cmt: " + estimation.subj.getComponent[Description].get.text +
+          " with likes cnt: " + estimation.subj.getComponent[Likability].get.value +
+          " with time elapsed: " + new Period(estimation.subj.getComponent[CreationDate].get.value, DateTime.now(Utils.timeZone)).toStandardSeconds.getSeconds + "sec")
         respF <- Try(Await.result(pipeline(Get(buildRequest("wall.deleteComment", "access_token" -> cfg.token ::
           "comment_id" -> id.value :: defaultParams))), 10.seconds)).toEither.left.map(_.getMessage)
         resp <- respF.errorOrResp.left.map(_.getMessage)
