@@ -39,7 +39,10 @@ class AServiceControl extends Actor with ActorLogging {
 
   val workersCount = Runtime.getRuntime.availableProcessors
   val estimator = new TotalEstimator(new LoyaltyEstimator(LoyaltyConfigs(Map(
-    new Period().withSeconds(10) -> 1.0
+    new Period().withMinutes(5) ->  5.0,
+    new Period().withMinutes(10) -> 10.0,
+    new Period().withMinutes(15) -> 15.0,
+    new Period().withMinutes(20) -> 20.0
   ))) :: Nil)
 
   override def receive: Receive = serve(None, None, Nil)
