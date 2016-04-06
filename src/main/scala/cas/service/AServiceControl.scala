@@ -37,7 +37,7 @@ class AServiceControl extends Actor with ActorLogging {
   import AServiceControl._
   import ImplicitActorSystem._
 
-  val workersCount = Runtime.getRuntime.availableProcessors
+  val workersCount = 2 // Runtime.getRuntime.availableProcessors
   val estimator = new TotalEstimator(new LoyaltyEstimator(LoyaltyConfigs(Map(
     new Period().plusMinutes(5) ->  5.0,
     new Period().plusMinutes(10) -> 10.0,
