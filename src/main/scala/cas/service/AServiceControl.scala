@@ -67,7 +67,7 @@ class AServiceControl extends Actor with ActorLogging {
       workers.foreach(context.stop)
       router.foreach(system.stop)
       producer.foreach(system.stop)
-      querySchedule.foreach(_.cancel)
+      // querySchedule.foreach(q => if (!q.isCancelled) q.cancel)
       log.info("[AServiceControl] Service successfully stopped.")
       context.become(serve(None, None, Nil))
     }
