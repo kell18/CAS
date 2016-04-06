@@ -50,6 +50,7 @@ class AProducer(dealer: ContentDealer, estimator: TotalEstimator) extends Actor 
     case PushingEstimations(chunk) => changeContext(consumers, chunk :: estimChunks)
 
     case QueryTick => {
+      print("QueryTick")
       val estims = estimChunks.flatten
       if (estims.nonEmpty) dealer.pushEstimations(estims) onComplete {
         case Success(Right(_)) => changeContext(consumers, Nil)
