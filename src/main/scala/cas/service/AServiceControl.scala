@@ -5,8 +5,10 @@ import cas.web.dealers.DealersFactory
 import cas.web.interface.ImplicitActorSystem
 import cas.web.model.UsingDealer
 import org.joda.time.Period
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, Props}
+import cas.service.AProducer.QueryTick
 import cas.service.AServiceControl.ServiceStatus.ServiceStatus
+
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
@@ -36,6 +38,7 @@ object AServiceControl {
 class AServiceControl extends Actor with ActorLogging {
   import AServiceControl._
   import ImplicitActorSystem._
+  import system.dispatcher
 
   val workersCount = 2 // Runtime.getRuntime.availableProcessors
   val estimator = new TotalEstimator(new LoyaltyEstimator(LoyaltyConfigs(Map(
@@ -44,6 +47,8 @@ class AServiceControl extends Actor with ActorLogging {
     new Period().plusMinutes(15) -> 15.0,
     new Period().plusMinutes(20) -> 20.0
   ))) :: Nil)
+
+  var querySchedule: Option[Cancellable] = None
 
   //(new Period().plusMinutes(23)).toStandardSeconds.getSeconds
 
@@ -62,6 +67,7 @@ class AServiceControl extends Actor with ActorLogging {
       workers.foreach(context.stop)
       router.foreach(system.stop)
       producer.foreach(system.stop)
+      querySchedule.foreach(_.cancel)
       log.info("[AServiceControl] Service successfully stopped.")
       context.become(serve(None, None, Nil))
     }
@@ -71,6 +77,8 @@ class AServiceControl extends Actor with ActorLogging {
 
     case Init(dealer) => {
       val prod = Some(system.actorOf(producerProps(dealer, estimator), "Producer"))
+      val frequency = dealer.estimatedQueryFrequency
+      querySchedule = Some(context.system.scheduler.schedule(frequency, frequency, prod.get, QueryTick))
       val router = Some(system.actorOf(routerProps(prod.get), "Router"))
       val workers = for (i <- 1 to workersCount)
         yield context.actorOf(workerProps(estimator, router.get), "Worker-"+i)

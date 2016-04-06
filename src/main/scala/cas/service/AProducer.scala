@@ -26,12 +26,9 @@ class AProducer(dealer: ContentDealer, estimator: TotalEstimator) extends Actor 
   import cas.web.interface.ImplicitActorSystem._
   import system.dispatcher
 
-  var querySchedule: Option[Cancellable] = None
-
   override def preStart = {
     super.preStart()
     val frequency = dealer.estimatedQueryFrequency
-    querySchedule = Some(context.system.scheduler.schedule(frequency, frequency, self, QueryTick))
     log.info("[AContentService] preStart")
   }
 
@@ -40,7 +37,6 @@ class AProducer(dealer: ContentDealer, estimator: TotalEstimator) extends Actor 
   override def postStop = {
     super.postStop()
     log.info("[AContentService] postStop")
-    querySchedule.foreach(_.cancel)
   }
 
   def serve(consumers: List[ActorRef], estimChunks: List[Estimations]): Receive = {
