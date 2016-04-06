@@ -50,16 +50,11 @@ class AProducer(dealer: ContentDealer, estimator: TotalEstimator) extends Actor 
     case PushingEstimations(chunk) => changeContext(consumers, chunk :: estimChunks)
 
     case QueryTick => {
-      if (estimChunks.nonEmpty) estimChunks match {
-        case Nil => Unit
-        case chunk::chunks => chunk match {
-          case Nil => changeContext(consumers, chunks)
-          case e::es => dealer.pushEstimation(e) onComplete {
-            case Success(Right(_)) => changeContext(consumers, es :: chunks)
-            case Success(Left(err)) => {log.error(err); changeContext(consumers, es :: chunks)}
-            case Failure(NonFatal(ex)) => {logWarning(ex); changeContext(consumers, es :: chunks)}
-          }
-        }
+      val estims = estimChunks.flatten
+      if (estims.nonEmpty) dealer.pushEstimations(estims) onComplete {
+        case Success(Right(_)) => changeContext(consumers, Nil)
+        case Success(Left(err)) => {log.error(err); changeContext(consumers, Nil)}
+        case Failure(NonFatal(ex)) => {logWarning(ex); changeContext(consumers, Nil)}
       }
       else consumers match {
         case Nil => Unit

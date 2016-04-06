@@ -26,9 +26,9 @@ object VkApiDealer {
   val apiUrl = "https://api.vk.com/method/"
   val apiVersion = "5.50"
 
-  val actualityThreshold = 0.5
-  val filterableCount = 10
-  val queriesPerSec = 3
+  val actualityThreshold = 1.0
+  val filterableCount = 30
+  val queriesPerSec = 1
 
   val clientId = "5369112"
   val clientSecret = "fFZQIwuIPR5bXxRW0c0I"
@@ -61,6 +61,9 @@ class VkApiDealer(cfg: VkApiConfigs)(implicit val system: ActorSystem) extends C
       resp <- respF.errorOrResp.left.map(_.getMessage)
     } yield for {
       comment <- resp.items
+//      _ = println("Pull: " +
+//            comment.text +
+//            new Period(new DateTime(comment.date * sec2Millis, Utils.timeZone), DateTime.now(Utils.timeZone)).toStandardSeconds)
 //      _ = if (comment.text.startsWith("_test")) println("Pull: " +
 //        comment.text +
 //        new Period(new DateTime(comment.date * sec2Millis, Utils.timeZone), DateTime.now(Utils.timeZone)).toStandardSeconds
@@ -81,15 +84,35 @@ class VkApiDealer(cfg: VkApiConfigs)(implicit val system: ActorSystem) extends C
         id <- estimation.subj.getComponent[ID]
         post <- estimation.subj.getComponent[Subject]
         postId <- post.getComponent[ID]
-       _ = println("Deleting cmt: " + estimation.subj.getComponent[Description].get.text +
+        _ = println("Deleting cmt: " + estimation.subj.getComponent[Description].get.text +
           " with likes cnt: " + estimation.subj.getComponent[Likability].get.value +
           " with time elapsed: " + new Period(estimation.subj.getComponent[CreationDate].get.value, DateTime.now(Utils.timeZone)).toStandardSeconds.getSeconds + "sec")
         respF <- Try(Await.result(pipeline(Get(buildRequest("wall.deleteComment", "access_token" -> cfg.token ::
           "comment_id" -> id.value :: defaultParams))), 10.seconds)).toEither.left.map(_.getMessage)
         resp <- respF.errorOrResp.left.map(_.getMessage)
-      } yield resp
+      } yield VkSimpleResponse(1)
     }
     else Right(VkSimpleResponse(1))
+  }
+
+  override def pushEstimations(estims: Estimations): Future[Either[ErrorMsg, Any]] = {
+    val pipeline = sendReceive ~> unmarshal[VkFallible[VkSimpleResponse]]
+    val scriptLines = (for {
+      estim <- estims if estim.actuality < actualityThreshold
+    } yield for {
+      id <- estim.subj.getComponent[ID]
+      _ = println("Deleting cmt: " + estim.subj.getComponent[Description].get.text +
+        " with likes cnt: " + estim.subj.getComponent[Likability].get.value +
+        " with time elapsed: " + new Period(estim.subj.getComponent[CreationDate].get.value, DateTime.now(Utils.timeZone)).toStandardSeconds.getSeconds + "sec")
+    } yield buildDelLine(cfg.ownerId.toString, id.value)).map(_.right.getOrElse("")).mkString
+
+    if (scriptLines.nonEmpty) for {
+      resp <- pipeline(Get(buildRequest("execute","access_token" -> cfg.token ::
+        "v" -> apiVersion :: "code" -> (scriptLines.mkString + "return%201;") :: Nil)))
+    } yield for {
+      vkResp <- resp.errorOrResp.left.map(_.getMessage)
+    } yield vkResp
+    else Future { Right(VkSimpleResponse(1)) }
   }
 
   def pullTopPost = {
@@ -106,6 +129,10 @@ class VkApiDealer(cfg: VkApiConfigs)(implicit val system: ActorSystem) extends C
       }
     }
   }
+
+  def buildDelLine(ownerId: String, id: String) =
+    s"""API.wall.deleteComment({%22owner_id%22:%22$ownerId%22,%22comment_id%22:$id});"""
+//    escapeJava("API.wall.deleteComment({\"owner_id\":\"" + ownerId  + "\",\"comment_id\":" + id + "});")
 
   def buildRequest(method: String, params: List[(String, String)]) = Web.buildRequest(apiUrl)(method)(params)
 }

@@ -9,6 +9,7 @@ import cas.analysis.subject.Subject
 import cas.analysis.subject.components.{CreationDate, Likability}
 import cas.service.ARouter.Estimation
 import cas.service.AServiceControl.{Init, Stop}
+import cas.utils.UtilAliases.Estimations
 import org.joda.time.{DateTime, Period}
 import org.specs2.mutable.Specification
 import org.specs2.time.NoTimeConversions
@@ -45,6 +46,12 @@ class ContentServiceSpec extends Specification with NoTimeConversions {
 
         override def pushEstimation(estim: Estimation): Future[Either[String, Any]] = {
           pushedEstimations = estim :: pushedEstimations
+          isPushed = true
+          Future { Right(true) }
+        }
+
+        override def pushEstimations(es: Estimations) = {
+          pushedEstimations = es ::: pushedEstimations
           isPushed = true
           Future { Right(true) }
         }
