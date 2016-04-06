@@ -101,7 +101,8 @@ class VkApiDealer(cfg: VkApiConfigs)(implicit val system: ActorSystem) extends C
       estim <- estims if estim.actuality < actualityThreshold
     } yield for {
       id <- estim.subj.getComponent[ID]
-      _ = println("Deleting cmt: " + estim.subj.getComponent[Description].get.text +
+      _ = println("[" + new DateTime().getHourOfDay + ":" + new DateTime().getMinuteOfHour + "] " +
+        "Deleting cmt: " + estim.subj.getComponent[Description].get.text +
         " with likes cnt: " + estim.subj.getComponent[Likability].get.value +
         " with time elapsed: " + new Period(estim.subj.getComponent[CreationDate].get.value, DateTime.now(Utils.timeZone)).toStandardSeconds.getSeconds + "sec")
     } yield buildDelLine(cfg.ownerId.toString, id.value)).map(_.right.getOrElse("")).mkString

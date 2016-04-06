@@ -28,7 +28,7 @@ class ARouter(producer: ActorRef) extends Actor {
 
   override def receive = {
     case PullSubjects => {
-      // println("Rout - PullSubjects: " + pulledSubjs.length)
+      println("[Rout] PullSubjects `" + pulledSubjs.mkString + "`")
       if (pulledSubjs.isEmpty) waitingWorkers.enqueue(sender)
       else {
         sender ! pulledSubjs.dequeue
@@ -37,7 +37,7 @@ class ARouter(producer: ActorRef) extends Actor {
     }
 
     case PulledSubjects(chunk) => {
-      // println("Rout - waitingWorkers: " + waitingWorkers.length)
+      println("[Rout] waitingWorkers: `" + waitingWorkers.mkString + "`")
       if (waitingWorkers.isEmpty) pulledSubjs.enqueue(PulledSubjects(chunk))
       else {
         waitingWorkers.dequeue ! PulledSubjects(chunk)
@@ -45,6 +45,9 @@ class ARouter(producer: ActorRef) extends Actor {
       }
     }
 
-    case estims: PushingEstimations => producer forward estims
+    case estims: PushingEstimations => {
+      println("[Rout] PushingEstimations: `" + estims.estims.mkString + "`")
+      producer forward estims
+    }
   }
 }
