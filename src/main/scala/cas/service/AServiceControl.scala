@@ -56,7 +56,7 @@ class AServiceControl extends Actor with ActorLogging {
 
   def serve(producer: Option[ActorRef], router: Option[ActorRef], workers: List[ActorRef]): Receive = {
     case Start(dealerConfigs) => {
-      self ! Stop
+      // self ! Stop
       DealersFactory.buildDealer(dealerConfigs.id) match {
         case Success(dealer) => self ! Init(dealer)
         case Failure(NonFatal(e)) => log.error(s"[AServiceControl] Cannot start content service: `${e.getMessage}`")
@@ -79,11 +79,11 @@ class AServiceControl extends Actor with ActorLogging {
       val prod = Some(system.actorOf(producerProps(dealer, estimator), "Producer"))
       val frequency = dealer.estimatedQueryFrequency
       querySchedule = Some(context.system.scheduler.schedule(frequency, frequency, prod.get, QueryTick))
-      val router = Some(system.actorOf(routerProps(prod.get), "Router"))
-      val workers = for (i <- 1 to workersCount)
-        yield context.actorOf(workerProps(estimator, router.get), "Worker-"+i)
+     /* val rout = Some(system.actorOf(routerProps(prod.get), "Router"))
+      val wrkrs = for (i <- 1 to workersCount)
+        yield context.actorOf(workerProps(estimator, rout.get), "Worker-"+i)*/
       log.info("[AServiceControl] Service successfully started.")
-      context.become(serve(prod, router, workers.toList))
+      context.become(serve(prod, router, workers))
     }
   }
 }
