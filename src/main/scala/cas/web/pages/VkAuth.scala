@@ -17,7 +17,7 @@ import spray.json._
 
 object VkAuth {
   import VkApiDealer._
-  import cas.web.interface.ImplicitActorSystem._
+  import cas.web.interface.ImplicitRuntime._
   import system.dispatcher
 
   val persistPath = Files.dealers + "/" + VkApiDealer.id

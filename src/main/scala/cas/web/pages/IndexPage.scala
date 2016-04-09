@@ -8,11 +8,13 @@ import Directives._
 import akka.actor.{ActorRef, Props}
 import akka.pattern.ask
 import akka.util.Timeout
-import cas.analysis.estimation.{LoyaltyConfigs, LoyaltyEstimator, TotalEstimator}
-import cas.service.{AProducer$, AServiceControl}
+import cas.analysis.estimation._
+import cas.service.{AProducer, AServiceControl}
 import cas.utils._
 import cas.web.dealers.DealersFactory
+import cas.web.interface.ImplicitRuntime
 import cas.web.model._
+import org.joda.time.Period
 import spray.json._
 
 import scala.concurrent.Await
@@ -20,11 +22,27 @@ import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
 object IndexPage {
-  import cas.web.interface.ImplicitActorSystem._
+  import cas.web.interface.ImplicitRuntime._
   import scala.concurrent.ExecutionContext.Implicits.global
   import AServiceControl._
   import UsingDealerProtocol._
   implicit val timeout = Timeout(3.seconds)
+
+  val productionEstimator = new TotalEstimator(new LoyaltyEstimator(LoyaltyConfigs(Map(
+    new Period().plusMinutes(5) ->  0.5,
+    new Period().plusMinutes(10) -> 0.2,
+    new Period().plusMinutes(15) -> 0.142857143,
+    new Period().plusMinutes(20) -> 0.1
+  ), 0.5)) ::  new InverseRelevanceEstimator(new InverseRelevanceConfigs(0.121f, 0.5))
+    :: Nil)
+
+  val testingEstimator = new TotalEstimator(new LoyaltyEstimator(LoyaltyConfigs(Map(
+    new Period().plusMinutes(5) ->  0.5,
+    new Period().plusMinutes(10) -> 0.2,
+    new Period().plusMinutes(15) -> 0.142857143,
+    new Period().plusMinutes(20) -> 0.1
+  ), 0.5)) ::  new InverseRelevanceEstimator(new InverseRelevanceConfigs(0.121f, 0.5))
+    :: Nil)
 
 	def apply(pagePath: String, serviceControl: ActorRef) = path(pagePath) {
     get {
@@ -33,7 +51,7 @@ object IndexPage {
           if (isRun) for {
             file <- Files.readFile(Files.currentDealer)
             currDealer <- Try(file.parseJson.convertTo[UsingDealer])
-          } yield serviceControl ! Start(currDealer)
+          } yield serviceControl ! Start(currDealer, productionEstimator)
           else {
             Success(serviceControl ! Stop)
           }

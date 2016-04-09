@@ -1,8 +1,8 @@
 package cas.service
 
-import cas.analysis.estimation.{LoyaltyConfigs, LoyaltyEstimator, TotalEstimator}
+import cas.analysis.estimation.{ActualityEstimator, LoyaltyConfigs, LoyaltyEstimator, TotalEstimator}
 import cas.web.dealers.DealersFactory
-import cas.web.interface.ImplicitActorSystem
+import cas.web.interface.ImplicitRuntime
 import cas.web.model.UsingDealer
 import org.joda.time.Period
 import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, Props}
@@ -14,7 +14,7 @@ import scala.util.{Failure, Success}
 
 object AServiceControl {
   /** Stop service if any active and init new one */
-  case class  Start(dealerID: UsingDealer)
+  case class  Start(dealerID: UsingDealer, estim: ActualityEstimator)
   /** Stop service if any active but don't stop itself */
   object      Stop
 
@@ -28,25 +28,19 @@ object AServiceControl {
     val Paused = Value("Paused")
   }
 
-  private[cas] case class Init(dealer: ContentDealer)
+  private[cas] case class Init(dealer: ContentDealer, estim: ActualityEstimator)
 
-  private def producerProps(dealer: ContentDealer, estimator: TotalEstimator) = Props(new AProducer(dealer, estimator))
+  private def producerProps(dealer: ContentDealer) = Props(new AProducer(dealer))
   private def routerProps(producer: ActorRef) = Props(new ARouter(producer))
-  private def workerProps(estimator: TotalEstimator, router: ActorRef) = Props(new AWorkerEstimator(estimator, router))
+  private def workerProps(estimator: ActualityEstimator, router: ActorRef) = Props(new AWorkerEstimator(estimator, router))
 }
 
 class AServiceControl extends Actor with ActorLogging {
   import AServiceControl._
-  import ImplicitActorSystem._
+  import ImplicitRuntime._
   import system.dispatcher
 
   val workersCount = 2 // Runtime.getRuntime.availableProcessors
-  val estimator = new TotalEstimator(new LoyaltyEstimator(LoyaltyConfigs(Map(
-    new Period().plusMinutes(5) ->  5.0,
-    new Period().plusMinutes(10) -> 10.0,
-    new Period().plusMinutes(15) -> 15.0,
-    new Period().plusMinutes(20) -> 20.0
-  ))) :: Nil)
 
   var querySchedule: Option[Cancellable] = None
 
@@ -55,10 +49,10 @@ class AServiceControl extends Actor with ActorLogging {
   override def receive: Receive = serve(None, None, Nil)
 
   def serve(producer: Option[ActorRef], router: Option[ActorRef], workers: List[ActorRef]): Receive = {
-    case Start(dealerConfigs) => {
-      // self ! Stop
+    case Start(dealerConfigs, estim) => { // TODO: Build estim here from configs
+      self ! Stop
       DealersFactory.buildDealer(dealerConfigs.id) match {
-        case Success(dealer) => self ! Init(dealer)
+        case Success(dealer) => self ! Init(dealer, estim)
         case Failure(NonFatal(e)) => log.error(s"[AServiceControl] Cannot start content service: `${e.getMessage}`")
       }
     }
@@ -67,23 +61,23 @@ class AServiceControl extends Actor with ActorLogging {
       workers.foreach(context.stop)
       router.foreach(system.stop)
       producer.foreach(system.stop)
-      // querySchedule.foreach(q => if (!q.isCancelled) q.cancel)
+      querySchedule.foreach(q => if (!q.isCancelled) q.cancel)
       log.info("[AServiceControl] Service successfully stopped.")
       context.become(serve(None, None, Nil))
     }
 
     case GetStatus => if (producer.isDefined && router.isDefined && workers.nonEmpty) sender ! Status(ServiceStatus.Active)
-                      else sender ! Status(ServiceStatus.Inactive)
+    else sender ! Status(ServiceStatus.Inactive)
 
-    case Init(dealer) => {
-      val prod = Some(system.actorOf(producerProps(dealer, estimator), "Producer"))
+    case Init(dealer, estim) => {
+      val prod = Some(system.actorOf(producerProps(dealer), "Producer"))
       val frequency = dealer.estimatedQueryFrequency
       querySchedule = Some(context.system.scheduler.schedule(frequency, frequency, prod.get, QueryTick))
-     /* val rout = Some(system.actorOf(routerProps(prod.get), "Router"))
+      val rout = Some(system.actorOf(routerProps(prod.get), "Router"))
       val wrkrs = for (i <- 1 to workersCount)
-        yield context.actorOf(workerProps(estimator, rout.get), "Worker-"+i)*/
+        yield context.actorOf(workerProps(estim, rout.get), "Worker-"+i)
       log.info("[AServiceControl] Service successfully started.")
-      context.become(serve(prod, router, workers))
+      context.become(serve(prod, rout, wrkrs.toList))
     }
   }
 }

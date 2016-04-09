@@ -8,8 +8,8 @@ import cas.utils.Utils
 import org.joda.time.{Chronology, DateTime, DateTimeZone, Period}
 
 case class LoyaltyConfigs(
-    scores: Map[Period, Double], override val weight: Double = 1.0
-  ) extends EstimatorConfigs(weight)
+  scores: Map[Period, Double], override val weight: Double = 1.0
+) extends EstimatorConfigs(weight)
 
 class LoyaltyEstimator(cfg: LoyaltyConfigs) extends ActualityEstimator(cfg) {
 
@@ -20,10 +20,19 @@ class LoyaltyEstimator(cfg: LoyaltyConfigs) extends ActualityEstimator(cfg) {
   } yield estimateLoyalty(likes.value, reposts.value, date.value, subj)
 
   def estimateLoyalty(likes: Double, repost: Double, subjDate: DateTime, subj: Subject) = {
-    val pastTime = new Period(subjDate, DateTime.now(Utils.timeZone))
-    val isFail = cfg.scores.exists { case(period, minScore) =>
-      pastTime.toStandardSeconds.getSeconds > period.toStandardSeconds.getSeconds && (likes + repost) < minScore
-    }
-    if (isFail) 0.0 else 1.0
+    val pastTime = new Period(subjDate, DateTime.now(Utils.timeZone)).toStandardSeconds.getSeconds
+    var loyalty = 0.0
+    cfg.scores.foldLeft(Period.ZERO -> cfg.scores.head._2) ((prev, next) => { // Fr zero
+      val prevTime = prev._1.toStandardSeconds.getSeconds
+      val nextTime = next._1.toStandardSeconds.getSeconds
+      if (pastTime >= prevTime && pastTime < nextTime) {
+        loyalty = if (prev._1 == Period.ZERO) 1.0 else Math.min(likes * prev._2, 1.0)
+      }
+      (next._1, next._2)
+    })
+    val last = cfg.scores.last
+    if (pastTime > last._1.toStandardSeconds.getSeconds) loyalty = likes * last._2
+    loyalty
   }
+
 }

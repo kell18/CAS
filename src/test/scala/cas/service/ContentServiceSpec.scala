@@ -25,10 +25,12 @@ class ContentServiceSpec extends Specification with NoTimeConversions {
 
     "Push proper estims and subjs as received in pullSubjectsChunk" in new AkkaToSpec2Scope {
       val estimator = new TotalEstimator(new LoyaltyEstimator(LoyaltyConfigs(Map(
-        new Period().withMillis(50) -> 2.0))) :: Nil)
+        new Period().plusMinutes(1) ->  0.3
+      ))) :: Nil)
+      val likesCnt = 20.0
 
       val dealer = new ContentDealer {
-        val pullingSubjects = Subject(ID("ID1") :: Likability(20.0) :: CreationDate(DateTime.now()) ::
+        val pullingSubjects = Subject(ID("ID1") :: Likability(likesCnt) :: CreationDate(DateTime.now().minusMinutes(2)) ::
           Subject(ID("ID2") :: Nil) :: Nil) :: Nil
         var pushedEstimations = List[Estimation]()
         var isPulled = false
@@ -63,14 +65,14 @@ class ContentServiceSpec extends Specification with NoTimeConversions {
       }
 
       val service = system.actorOf(Props(new AServiceControl))
-      service ! Init(dealer)
+      service ! Init(dealer, estimator)
       val estims = Await.result(waitForPushF, Duration("10 seconds"))
       service ! Stop
       system.stop(service)
 
       val subjs = estims.flatten(e => e.subj :: Nil)
       subjs must containTheSameElementsAs(dealer.pullingSubjects)
-      estims.head.actuality must beGreaterThan(0.5)
+      estims.head.actuality must beCloseTo(0.3 * likesCnt, 0.001)
     }
   }
 }

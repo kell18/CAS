@@ -10,6 +10,7 @@ import cas.utils.Mathf.sec2Millis
 import cas.web.dealers.vk.VkApiProtocol._
 import cas.utils.StdImplicits._
 import cas.utils.UtilAliases._
+import com.sksamuel.elastic4s.ElasticClient
 import spray.client.pipelining._
 import spray.httpx.SprayJsonSupport._
 import org.joda.time.{DateTime, Period}
@@ -17,7 +18,13 @@ import scala.collection.mutable
 import scala.concurrent.{Await, Future}
 import scala.util.Try
 import spray.json._
+import cas.utils.StdImplicits.RightBiasedEither
 import scala.concurrent.duration._
+import com.sksamuel.elastic4s.ElasticDsl._
+import org.ccil.cowan.tagsoup.jaxp.SAXFactoryImpl
+import scala.xml.{Node, XML}
+import scala.xml.parsing.NoBindingFactoryAdapter
+import Utils._
 
 object VkApiDealer {
   import VkApiProtocol._
@@ -26,25 +33,26 @@ object VkApiDealer {
   val apiUrl = "https://api.vk.com/method/"
   val apiVersion = "5.50"
 
-  val actualityThreshold = 1.0
-  val filterableCount = 30
-  val queriesPerSec = 1
+  val actualityThreshold = 0.5
+  val filterableCount = 80
+  val queriesPerSec = 3
 
   val clientId = "5369112"
   val clientSecret = "fFZQIwuIPR5bXxRW0c0I"
   val scope = "wall,groups,stats,friends,offline"
 
-  def apply(rawConfigs: String)(implicit system: ActorSystem) = for {
+  def apply(rawConfigs: String)(implicit system: ActorSystem, client: ElasticClient) = for {
     c <- Try(rawConfigs.parseJson.convertTo[VkApiConfigs])
   } yield new VkApiDealer(c)
 }
 
-class VkApiDealer(cfg: VkApiConfigs)(implicit val system: ActorSystem) extends ContentDealer {
+class VkApiDealer(cfg: VkApiConfigs)(implicit val system: ActorSystem, client: ElasticClient) extends ContentDealer {
   import VkApiProtocol._
   import VkApiDealer._
   import system.dispatcher
+  val ind = "rbc"
+  val shape = "posts"
 
-   // scope = "wall,groups,stats,friends"
   val postsToSift = new mutable.Queue[VkPost]()
   val defaultParams = "owner_id" -> cfg.ownerId.toString :: "v" -> apiVersion :: Nil
 
@@ -61,13 +69,6 @@ class VkApiDealer(cfg: VkApiConfigs)(implicit val system: ActorSystem) extends C
       resp <- respF.errorOrResp.left.map(_.getMessage)
     } yield for {
       comment <- resp.items
-//      _ = println("Pull: " +
-//            comment.text +
-//            new Period(new DateTime(comment.date * sec2Millis, Utils.timeZone), DateTime.now(Utils.timeZone)).toStandardSeconds)
-//      _ = if (comment.text.startsWith("_test")) println("Pull: " +
-//        comment.text +
-//        new Period(new DateTime(comment.date * sec2Millis, Utils.timeZone), DateTime.now(Utils.timeZone)).toStandardSeconds
-//      ) else {}
     } yield Subject(List(
         ID(comment.id.toString),
         Subject(List(ID(post.id.toString))),
@@ -84,9 +85,6 @@ class VkApiDealer(cfg: VkApiConfigs)(implicit val system: ActorSystem) extends C
         id <- estimation.subj.getComponent[ID]
         post <- estimation.subj.getComponent[Subject]
         postId <- post.getComponent[ID]
-        _ = println("Deleting cmt: " + estimation.subj.getComponent[Description].get.text +
-          " with likes cnt: " + estimation.subj.getComponent[Likability].get.value +
-          " with time elapsed: " + new Period(estimation.subj.getComponent[CreationDate].get.value, DateTime.now(Utils.timeZone)).toStandardSeconds.getSeconds + "sec")
         respF <- Try(Await.result(pipeline(Get(buildRequest("wall.deleteComment", "access_token" -> cfg.token ::
           "comment_id" -> id.value :: defaultParams))), 10.seconds)).toEither.left.map(_.getMessage)
         resp <- respF.errorOrResp.left.map(_.getMessage)
@@ -98,15 +96,12 @@ class VkApiDealer(cfg: VkApiConfigs)(implicit val system: ActorSystem) extends C
   override def pushEstimations(estims: Estimations): Future[Either[ErrorMsg, Any]] = {
     val pipeline = sendReceive ~> unmarshal[VkFallible[VkSimpleResponse]]
     val scriptLines = (for {
-      estim <- estims if estim.actuality < actualityThreshold
+      estim <- estims
+      if estim.actuality < actualityThreshold
     } yield for {
       id <- estim.subj.getComponent[ID]
-      _ = println("[" + new DateTime().getHourOfDay + ":" + new DateTime().getMinuteOfHour + "] " +
-        "Deleting cmt: " + estim.subj.getComponent[Description].get.text +
-        " with likes cnt: " + estim.subj.getComponent[Likability].get.value +
-        " with time elapsed: " + new Period(estim.subj.getComponent[CreationDate].get.value, DateTime.now(Utils.timeZone)).toStandardSeconds.getSeconds + "sec")
+     _ = logDelete(estim, "Deliting comment")
     } yield buildDelLine(cfg.ownerId.toString, id.value)).map(_.right.getOrElse("")).mkString
-
     if (scriptLines.nonEmpty) for {
       resp <- pipeline(Get(buildRequest("execute","access_token" -> cfg.token ::
         "v" -> apiVersion :: "code" -> (scriptLines.mkString + "return%201;") :: Nil)))
@@ -117,7 +112,12 @@ class VkApiDealer(cfg: VkApiConfigs)(implicit val system: ActorSystem) extends C
   }
 
   def pullTopPost = {
-    if (postsToSift.nonEmpty) Future { Right(postsToSift.dequeue) }
+    if (postsToSift.nonEmpty) Future {
+      val post = postsToSift.dequeue
+      val i = Math.min(Math.abs(filterableCount - postsToSift.length), filterableCount-1)
+      updateIndex(i.toString, post)
+      Right(post)
+    }
     else {
       val pipeline = sendReceive ~> unmarshal[VkFallible[VkResponse[VkPost]]]
       for {
@@ -126,9 +126,43 @@ class VkApiDealer(cfg: VkApiConfigs)(implicit val system: ActorSystem) extends C
         resp <- respF.errorOrResp
       } yield {
         resp.items.tail.foreach(postsToSift.enqueue(_))
+        updateIndex("1", resp.items.head)
         resp.items.head
       }
     }
+  }
+
+  def updateIndex(i: String, post: VkPost) = {
+    /*val upd = Try(client.execute { update id i in ind / shape doc(
+    "id" -> post.id.toString,
+    "text" -> getPostContent(post.text))
+  })
+  if (upd.isFailure) *//*client.execute { index into ind / shape id i fields(
+      "id" -> post.id.toString,
+      "text" -> getPostContent(post.text))
+    }*/
+  }
+
+  def getPostContent(post: String) = {
+    val urlRgx = """https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)""".r
+    val url = urlRgx.findFirstMatchIn(post).map(_.group(0))
+    // println("url: " + url)
+    if (url.isDefined) {
+      def attributeValueEquals(value: String)(node: Node) = {
+        node.attributes.exists(_.value.text == value)
+      }
+      val xml = loadXml(scala.io.Source.fromURL(url.get).mkString)
+      val article = xml \\ "_" filter attributeValueEquals("article__text")
+      post + " " + article.text
+    }
+    else post
+  }
+
+  def logDelete(estim: Estimation, action: String) = {
+    println("[" + new DateTime().getHourOfDay + ":" + new DateTime().getMinuteOfHour + "] " + action + "with Actuality: " + estim.actuality + " " +
+      " with likes cnt: " + estim.subj.getComponent[Likability].get.value +
+      " with time elapsed: " + new Period(estim.subj.getComponent[CreationDate].get.value, DateTime.now(Utils.timeZone)).toStandardSeconds.getSeconds + "sec"+
+      "Text: " + estim.subj.getComponent[Description].get.text)
   }
 
   def buildDelLine(ownerId: String, id: String) =

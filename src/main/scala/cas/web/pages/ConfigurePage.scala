@@ -10,7 +10,7 @@ import spray.client.pipelining._
 // TODO: Rename to vk auth
 object ConfigurePage {
   import VkApiDealer._
-  import cas.web.interface.ImplicitActorSystem._
+  import cas.web.interface.ImplicitRuntime._
   import system.dispatcher
 
   val pipeline = sendReceive

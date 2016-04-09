@@ -9,9 +9,9 @@ import cas.analysis.subject.components.Description
 import scala.annotation.tailrec
 import scala.concurrent.Future
 
-class AWorkerEstimator(estimator: TotalEstimator, router: ActorRef) extends Actor with ActorLogging {
+class AWorkerEstimator(estimator: ActualityEstimator, router: ActorRef) extends Actor with ActorLogging {
   import ARouter._
-  import cas.web.interface.ImplicitActorSystem._
+  import cas.web.interface.ImplicitRuntime._
   import system.dispatcher
 
   override def preStart(): Unit = {

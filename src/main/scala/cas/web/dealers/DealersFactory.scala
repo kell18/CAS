@@ -7,7 +7,7 @@ import cas.web.dealers.vk.VkApiDealer
 import scala.util.Try
 
 object DealersFactory {
-  import cas.web.interface.ImplicitActorSystem._
+  import cas.web.interface.ImplicitRuntime._
 
   val dealersLookup: Map[String, String => Try[ContentDealer]] = Map(
     VkApiDealer.id -> VkApiDealer.apply

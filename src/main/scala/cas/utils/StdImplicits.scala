@@ -1,5 +1,7 @@
 package cas.utils
 
+import cas.utils.UtilAliases.ErrorMsg
+
 import scala.util.{Failure, Success, Try}
 
 object StdImplicits {
@@ -17,6 +19,10 @@ object StdImplicits {
     def toEither: Either[Throwable, T] = t match {
       case Success(some) => Right(some)
       case Failure(err) => Left(err)
+    }
+    def asEitherString: Either[ErrorMsg, T] = t match {
+      case Success(some) => Right(some)
+      case Failure(err) => Left(err.getMessage)
     }
   }
 

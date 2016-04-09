@@ -65,8 +65,8 @@ object VkApiProtocol extends DefaultJsonProtocol {
   }
 
 
-  case class VkPost(id: Int)
-  implicit val vkPostFormat = jsonFormat1(VkPost)
+  case class VkPost(id: Int, text: String)
+  implicit val vkPostFormat = jsonFormat2(VkPost)
 
 
   case class VkLikes(count: Int)

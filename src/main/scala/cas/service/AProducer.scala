@@ -18,17 +18,15 @@ object AProducer {
 /** Manages content flow btw dealer and router
   *
   * @param dealer concrete realization of ContentDealer
-  * @param estimator accumulative estimator
   */
-class AProducer(dealer: ContentDealer, estimator: TotalEstimator) extends Actor with ActorLogging { // TODO
+class AProducer(dealer: ContentDealer) extends Actor with ActorLogging { // TODO
   import AProducer._
   import ARouter._
-  import cas.web.interface.ImplicitActorSystem._
+  import cas.web.interface.ImplicitRuntime._
   import system.dispatcher
 
   override def preStart = {
     super.preStart()
-    val frequency = dealer.estimatedQueryFrequency
     log.info("[AContentService] preStart")
   }
 
@@ -46,8 +44,7 @@ class AProducer(dealer: ContentDealer, estimator: TotalEstimator) extends Actor 
     case PushingEstimations(chunk) => changeContext(consumers, chunk :: estimChunks)
 
     case QueryTick => {
-      print("QueryTick")
-      val estims = estimChunks.flatten
+      val estims = estimChunks.flatten // TODO: Optimize
       if (estims.nonEmpty) dealer.pushEstimations(estims) onComplete {
         case Success(Right(_)) => changeContext(consumers, Nil)
         case Success(Left(err)) => {log.error(err); changeContext(consumers, Nil)}
@@ -76,7 +73,6 @@ class AProducer(dealer: ContentDealer, estimator: TotalEstimator) extends Actor 
     if (estims.flatten.length > 25) {
       log.warning("estims length: " + estims.flatten.length)
     }
-    // log.info(estims.flatten.mkString("Estims: ", ", ", "."))
     context.become(serve(consumers, estims))
   }
 

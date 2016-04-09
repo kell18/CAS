@@ -2,7 +2,7 @@ package cas.web.interface
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import cas.analysis.estimation.{LoyaltyConfigs, LoyaltyEstimator, TotalEstimator}
-import cas.service.{AProducer$, AServiceControl, ContentDealer}
+import cas.service.{AProducer, AServiceControl, ContentDealer}
 import cas.web.dealers.DealersFactory
 import cas.web.model.UsingDealer
 import spray.routing._
@@ -23,7 +23,7 @@ object PageUrls {
 
 trait InterfaceControl extends HttpService {
   import PageUrls._
-  import ImplicitActorSystem._
+  import ImplicitRuntime._
 
   val serviceControl = system.actorOf(Props[AServiceControl])
 

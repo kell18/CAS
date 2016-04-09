@@ -11,11 +11,14 @@ import org.specs2.mutable.Specification
 class LoyaltyEstimatorSpec extends Specification {
   "LoyaltyEstimator" should {
     val estimator = new LoyaltyEstimator(LoyaltyConfigs(Map(
-      new Period().withSeconds(2) -> 2.0,
-      new Period().withSeconds(5) -> 10.0)
-    ))
-    val firstPeriod = new DateTime().minusSeconds(3)
-    val secondPeriod = new DateTime().minusSeconds(5)
+      new Period().plusMinutes(5) ->  0.5,
+      new Period().plusMinutes(10) -> 0.2,
+      new Period().plusMinutes(15) -> 0.142857143,
+      new Period().plusMinutes(20) -> 0.1
+    )))
+    val basePeriod = new DateTime().minusMinutes(3)
+    val firstPeriod = new DateTime().minusMinutes(6)
+    val thirdPeriod = new DateTime().minusMinutes(16)
     "Return error message" in {
       "with no likes" in {
         val subj = Subject(List(CreationDate(DateTime.now()), Virality(10.0)))
@@ -45,20 +48,23 @@ class LoyaltyEstimatorSpec extends Specification {
       }
 
       "by periods" in {
-        "not done in time" in {
-          val subj = Subject(List(Likability(1.0), CreationDate(firstPeriod)))
+        "base period" in {
+          val subj = Subject(List(Likability(0.0), CreationDate(basePeriod)))
           val actuality = estimator estimateActuality subj
-          actuality.get must beLessThan(1.0)
+          actuality.get must beCloseTo(1.0, 0.0001)
         }
-        "just in time" in {
-          val subj = Subject(List(Likability(2.0), CreationDate(firstPeriod)))
+        "first" in {
+          val likes = 2.0
+          val subj = Subject(List(Likability(likes), CreationDate(firstPeriod)))
           val actuality = estimator estimateActuality subj
-          actuality.get must beGreaterThan(0.0)
+          actuality.get must beCloseTo(0.5 * likes, 0.0001)
         }
-        "after time" in {
-          val subj = Subject(List(Likability(11.0), CreationDate(secondPeriod)))
+
+        "second" in {
+          val likes = 6.0
+          val subj = Subject(List(Likability(likes), CreationDate(thirdPeriod)))
           val actuality = estimator estimateActuality subj
-          actuality.get must beGreaterThan(0.0)
+          actuality.get must beCloseTo(0.142857143 * likes, 0.0001)
         }
       }
     }
