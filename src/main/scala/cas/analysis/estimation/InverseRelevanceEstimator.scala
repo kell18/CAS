@@ -9,11 +9,8 @@ import cas.utils.StdImplicits.TryOps
 
 import scala.util.Try
 
-case class InverseRelevanceConfigs(
-    threshold: Float, override val weight: Double = 1.0
-  ) extends EstimatorConfigs(weight)
-
-class InverseRelevanceEstimator(cfg: InverseRelevanceConfigs)(implicit val client: ElasticClient) extends ActualityEstimator(cfg) {
+class InverseRelevanceEstimator(
+     threshold: Float, val weight: Double = 1.0)(implicit val client: ElasticClient) extends ActualityEstimator {
   val ind = "rbc"
   val shape = "posts"
 
