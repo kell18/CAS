@@ -39,8 +39,8 @@ object VkApiProtocol extends DefaultJsonProtocol {
       case Success(r) => VkFallible[R](Right(r))
       case Failure(NonFatal(_)) => vkErrUnmarsh(HttpEntity(contentType, data)) match {
         case Right(err) => VkFallible[R](Left(err))
-        case Left(e) => VkFallible[R](Left(VkError(-1,
-          s"Does't got neither response or error from Vk: ${data.asString} exception: `$e`")))
+        case Left(e) => VkFallible[R](Left(VkError(-1, // TODO: NonFatal
+          s"Does't got neither response or error from Vk: ${data.asString} exception: `$e`"))) // TODO: deserErr
       }
     }
     case HttpEntity.Empty => deserializationError("Empty entity. VkResponse or Error expected")

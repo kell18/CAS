@@ -1,6 +1,6 @@
 package cas.analysis
 
-import cas.analysis.estimation.{InverseRelevanceConfigs, InverseRelevanceEstimator, LoyaltyEstimator}
+import cas.analysis.estimation.{InverseRelevanceConfigs, InvRelevanceEstimator, LoyaltyEstimator}
 import cas.analysis.subject.Subject
 import cas.analysis.subject.components.Description
 import org.specs2.mutable.Specification
@@ -12,7 +12,7 @@ import cas.utils.StdImplicits.RightBiasedEither
 class InverseEstimatorSpec extends Specification {
   import cas.web.interface.ImplicitRuntime._
   "LoyaltyEstimator" should {
-    val estimator = new InverseRelevanceEstimator(InverseRelevanceConfigs(0.5f))
+    val estimator = new InvRelevanceEstimator(InverseRelevanceConfigs(0.5f))
     "return estimation" in {
       val subj = Subject(Description("parrot") :: Nil)
       estimator.estimateActuality(subj) must beRight

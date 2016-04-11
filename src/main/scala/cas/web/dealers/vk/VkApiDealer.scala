@@ -101,7 +101,7 @@ class VkApiDealer(cfg: VkApiConfigs)(implicit val system: ActorSystem, client: E
     } yield for {
       id <- estim.subj.getComponent[ID]
      _ = logDelete(estim, "Deliting comment")
-    } yield buildDelLine(cfg.ownerId.toString, id.value)).map(_.right.getOrElse("")).mkString
+    } yield buildDelLine(cfg.ownerId.toString, id.value)).map(_.right.getOrElse("")).mkString // TODO: Rm
     if (scriptLines.nonEmpty) for {
       resp <- pipeline(Get(buildRequest("execute","access_token" -> cfg.token ::
         "v" -> apiVersion :: "code" -> (scriptLines.mkString + "return%201;") :: Nil)))
@@ -133,6 +133,8 @@ class VkApiDealer(cfg: VkApiConfigs)(implicit val system: ActorSystem, client: E
   }
 
   def updateIndex(i: String, post: VkPost) = {
+
+
     /*val upd = Try(client.execute { update id i in ind / shape doc(
     "id" -> post.id.toString,
     "text" -> getPostContent(post.text))

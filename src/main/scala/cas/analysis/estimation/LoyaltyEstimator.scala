@@ -19,6 +19,7 @@ class LoyaltyEstimator(cfg: LoyaltyConfigs) extends ActualityEstimator(cfg) {
     date <- subj.getComponent[CreationDate]
   } yield estimateLoyalty(likes.value, reposts.value, date.value, subj)
 
+
   def estimateLoyalty(likes: Double, repost: Double, subjDate: DateTime, subj: Subject) = {
     val pastTime = new Period(subjDate, DateTime.now(Utils.timeZone)).toStandardSeconds.getSeconds
     var loyalty = 0.0
