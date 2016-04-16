@@ -9,6 +9,7 @@ import akka.actor.{ActorRef, Props}
 import akka.pattern.ask
 import akka.util.Timeout
 import cas.analysis.estimation._
+import cas.persistence.searching.{ElasticSearch, SearchEngine}
 import cas.service.{AProducer, AServiceControl}
 import cas.utils._
 import cas.web.dealers.DealersFactory
@@ -28,12 +29,15 @@ object IndexPage {
   import UsingDealerProtocol._
   implicit val timeout = Timeout(3.seconds)
 
+  val searcher: SearchEngine = new ElasticSearch("http://localhost:9201", "rbc-posts", "posts")
+  searcher.initStorage
+
   val productionEstimator = new TotalEstimator(new LoyaltyEstimator(LoyaltyConfigs(Map(
     new Period().plusMinutes(5) ->  0.5,
     new Period().plusMinutes(10) -> 0.2,
     new Period().plusMinutes(15) -> 0.142857143,
     new Period().plusMinutes(20) -> 0.1
-  ), 0.5)) ::  new InvRelevanceEstimator(new InverseRelevanceConfigs(0.121f, 0.5))
+  ), 0.5)) ::  new InvRelevanceEstimator(new InverseRelevanceConfigs(searcher, 0.121f, 0.5))
     :: Nil)
 
   val testingEstimator = new TotalEstimator(new LoyaltyEstimator(LoyaltyConfigs(Map(
@@ -41,7 +45,7 @@ object IndexPage {
     new Period().plusMinutes(10) -> 0.2,
     new Period().plusMinutes(15) -> 0.142857143,
     new Period().plusMinutes(20) -> 0.1
-  ), 0.5)) ::  new InvRelevanceEstimator(new InverseRelevanceConfigs(0.121f, 0.5))
+  ), 0.5)) ::  new InvRelevanceEstimator(new InverseRelevanceConfigs(searcher, 0.121f, 0.5))
     :: Nil)
 
 	def apply(pagePath: String, serviceControl: ActorRef) = path(pagePath) {
@@ -51,7 +55,7 @@ object IndexPage {
           if (isRun) for {
             file <- Files.readFile(Files.currentDealer)
             currDealer <- Try(file.parseJson.convertTo[UsingDealer])
-          } yield serviceControl ! Start(currDealer, productionEstimator)
+          } yield serviceControl ! Start(currDealer, testingEstimator)
           else {
             Success(serviceControl ! Stop)
           }

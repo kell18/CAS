@@ -22,7 +22,7 @@ class ElasticSpec extends Specification with NoTimeConversions {
     "indexing documents" in new AkkaToSpec2Scope {
       val elastic = new ElasticSearch("http://localhost:9201", index, mtype)
       Await.result(elastic.initStorage, 10.seconds) must beRight
-      elastic.pushIndexedEntity(id, defaultEntity)
+      elastic.pushEntity(id, defaultEntity)
       Thread.sleep(2000)
       val entity = Await.result(elastic.getEntity(id), 10.seconds)
       entity must beRight
@@ -34,7 +34,7 @@ class ElasticSpec extends Specification with NoTimeConversions {
       "for exact match" in new AkkaToSpec2Scope {
         val elastic = new ElasticSearch("http://localhost:9201", index, mtype)
         Await.result(elastic.initStorage, 10.seconds) must beRight
-        val searchResp = Await.result(elastic.queryEntity(defaultEntity), 10.seconds)
+        val searchResp = Await.result(elastic.queryEntityScore(defaultEntity), 10.seconds)
         searchResp must beRight
         searchResp.get.maxScore must beSome
         searchResp.get.maxScore.get must beGreaterThan(0.1)
@@ -42,7 +42,7 @@ class ElasticSpec extends Specification with NoTimeConversions {
       "for partial match" in new AkkaToSpec2Scope {
         val elastic = new ElasticSearch("http://localhost:9201", index, mtype)
         Await.result(elastic.initStorage, 10.seconds) must beRight
-        val searchResp = Await.result(elastic.queryEntity(defaultEntity.split(" ")(0)), 10.seconds)
+        val searchResp = Await.result(elastic.queryEntityScore(defaultEntity.split(" ")(0)), 10.seconds)
         searchResp must beRight
         searchResp.get.maxScore must beSome
         searchResp.get.maxScore.get must beGreaterThan(0.1) and beLessThan(0.8)
@@ -50,7 +50,7 @@ class ElasticSpec extends Specification with NoTimeConversions {
       "for none match" in new AkkaToSpec2Scope {
         val elastic = new ElasticSearch("http://localhost:9201", index, mtype)
         Await.result(elastic.initStorage, 10.seconds) must beRight
-        val searchResp = Await.result(elastic.queryEntity("qwertyuiop$%^&*"), 10.seconds)
+        val searchResp = Await.result(elastic.queryEntityScore("qwertyuiop$%^&*"), 10.seconds)
         searchResp must beRight
         searchResp.get.maxScore must beNone
       }

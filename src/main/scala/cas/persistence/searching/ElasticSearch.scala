@@ -20,8 +20,9 @@ import cas.utils.UtilAliases.ErrorMsg
 
 
 object ElasticProtocol extends DefaultJsonProtocol {
-  val field = "doc"
+  val fieldName = "doc"
 
+  // TODO (1): Move it ti search engine
   case class ShortResponse(isCreated: Boolean)
   implicit val shortResponseFormat = jsonFormat(ShortResponse, "created")
 
@@ -39,7 +40,7 @@ object ElasticProtocol extends DefaultJsonProtocol {
   }
 
   case class GetResponse(value: Option[String])
-  implicit val getResponseFormat = jsonFormat(GetResponse, field)
+  implicit val getResponseFormat = jsonFormat(GetResponse, fieldName)
   implicit def getRespUnmarsh = Unmarshaller[GetResponse] (`application/json`) {
     case HttpEntity.NonEmpty(contentType, data) =>
       data.asString.parseJson.asJsObject.fields("_source").convertTo[GetResponse]
@@ -73,7 +74,7 @@ object ElasticProtocol extends DefaultJsonProtocol {
 }
 
 class ElasticSearch(val host: String, index: String = "cas-ind", mtype: String = "docs", ttl: Duration = Duration("48 hours"))
-                   (implicit val system: ActorSystem) {
+                   (implicit val system: ActorSystem) extends SearchEngine {
   import ElasticProtocol._
   import spray.httpx.SprayJsonSupport._
   import spray.json.DefaultJsonProtocol._
@@ -81,9 +82,9 @@ class ElasticSearch(val host: String, index: String = "cas-ind", mtype: String =
   val analyzer = "russian"
   val address = host + "/" + index + "/" + mtype
 
-  def queryEntity(entity: => String) = {
+  def queryEntityScore(entity: => String) = {
     val url = address + "/_search"
-    val data = s"""{ \"query\": { \"match\": { \"$field\": { \"analyzer\": \"$analyzer\", \"query\": \"$entity\" } } } }"""
+    val data = s"""{ \"query\": { \"match\": { \"$fieldName\": { \"analyzer\": \"$analyzer\", \"query\": \"$entity\" } } } }"""
     val pipeline = sendReceive ~> unmarshal[EsFallible[SearchResponse]]
     pipeline(Get(Uri(url), data)) map { _.errorOrResp }
   }
@@ -94,14 +95,14 @@ class ElasticSearch(val host: String, index: String = "cas-ind", mtype: String =
     pipeline(Get(Uri(url))) map { _.errorOrResp map {_.value} }
   }
 
-  def pushIndexedEntity(id: String, entity: => String) = {
+  def pushEntity(id: String, entity: => String) = {
     val url = address + "/" + id
-    val data = s"""{ "$field": "$entity" }"""
+    val data = s"""{ "$fieldName": "$entity" }"""
     val pipeline = sendReceive ~> unmarshal[EsFallible[ShortResponse]]
     pipeline(Put(Uri(url), data)) map { _.errorOrResp map {_.isCreated} }
   }
 
-  def delIndexedEntity(id: String) = {
+  def delEntity(id: String) = {
     val url = address + "/" + id
     val pipeline = sendReceive ~> unmarshal[EsFallible[DelResponse]]
     pipeline(Delete(Uri(url))) map { _.errorOrResp map {_.found} }
@@ -147,7 +148,7 @@ class ElasticSearch(val host: String, index: String = "cas-ind", mtype: String =
          },
          "$mtype": {
            "properties": {
-             "$field": {
+             "$fieldName": {
                "type":     "string",
                "analyzer": "$analyzer"
              }
