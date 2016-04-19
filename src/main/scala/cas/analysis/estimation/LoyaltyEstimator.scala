@@ -7,6 +7,7 @@ import cas.analysis.subject.components._
 import cas.utils.Utils
 import org.joda.time.{Chronology, DateTime, DateTimeZone, Period}
 
+/** @param scores - param that determ like wight by period of time  */
 case class LoyaltyConfigs(
   scores: Map[Period, Double], override val weight: Double = 1.0
 ) extends EstimatorConfigs(weight)
@@ -19,9 +20,9 @@ class LoyaltyEstimator(cfg: LoyaltyConfigs) extends ActualityEstimator(cfg) {
     date <- subj.getComponent[CreationDate]
   } yield estimateLoyalty(likes.value, reposts.value, date.value, subj)
 
-
+  /** Estimate loyalty based on likes weight in period of time (scores) */
   def estimateLoyalty(likes: Double, repost: Double, subjDate: DateTime, subj: Subject) = {
-    val pastTime = new Period(subjDate, DateTime.now(Utils.timeZone)).toStandardSeconds.getSeconds
+    val pastTime = new Period(DateTime.now(Utils.timeZone), subjDate).toStandardSeconds.getSeconds
     var loyalty = 0.0
     cfg.scores.foldLeft(Period.ZERO -> cfg.scores.head._2) ((prev, next) => { // Fr zero
       val prevTime = prev._1.toStandardSeconds.getSeconds

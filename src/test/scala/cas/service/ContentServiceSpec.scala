@@ -8,7 +8,7 @@ import cas.analysis.estimation._
 import cas.analysis.subject.Subject
 import cas.analysis.subject.components.{CreationDate, Likability}
 import cas.service.ARouter.Estimation
-import cas.service.AServiceControl.{Init, Stop}
+import cas.service.AServiceControl.{Start, Stop}
 import cas.utils.UtilAliases.Estimations
 import org.joda.time.{DateTime, Period}
 import org.specs2.mutable.Specification
@@ -65,7 +65,7 @@ class ContentServiceSpec extends Specification with NoTimeConversions {
       }
 
       val service = system.actorOf(Props(new AServiceControl))
-      service ! Init(dealer, estimator)
+      service ! Start(dealer, estimator)
       val estims = Await.result(waitForPushF, Duration("10 seconds"))
       service ! Stop
       system.stop(service)

@@ -112,12 +112,8 @@ class ElasticSearch(val host: String, index: String = "cas-ind", mtype: String =
     import spray.json.DefaultJsonProtocol._
     val pipeline = sendReceive ~> unmarshal[JsObject]
     pipeline(Get(Uri(host + "/_aliases"))) flatMap { indexes =>
-      if (!indexes.fields.contains(index))
-        createIndex
-      else {
-        system.log.warning(s"[ElasticSearch] Index $index already exists, will use it.")
-        Future { Right(true) }
-      }
+      if (!indexes.fields.contains(index)) createIndex
+      else Future { Right(false) }
     }
   }
 

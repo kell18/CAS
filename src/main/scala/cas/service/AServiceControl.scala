@@ -5,16 +5,19 @@ import cas.web.dealers.DealersFactory
 import cas.web.interface.ImplicitRuntime
 import cas.web.model.UsingDealer
 import org.joda.time.Period
+import akka.pattern.ask
+import akka.pattern._
+import akka.util.Timeout
 import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, Props}
 import cas.service.AProducer.QueryTick
 import cas.service.AServiceControl.ServiceStatus.ServiceStatus
-
+import scala.concurrent.duration._
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
 object AServiceControl {
   /** Stop service if any active and init new one */
-  case class  Start(dealerID: UsingDealer, estim: ActualityEstimator)
+  case class  Start(dealerID: ContentDealer, estim: ActualityEstimator)
   /** Stop service if any active but don't stop itself */
   object      Stop
 
@@ -28,8 +31,6 @@ object AServiceControl {
     val Paused = Value("Paused")
   }
 
-  private[cas] case class Init(dealer: ContentDealer, estim: ActualityEstimator)
-
   private def producerProps(dealer: ContentDealer) = Props(new AProducer(dealer))
   private def routerProps(producer: ActorRef) = Props(new ARouter(producer))
   private def workerProps(estimator: ActualityEstimator, router: ActorRef) = Props(new AWorkerEstimator(estimator, router))
@@ -39,45 +40,50 @@ class AServiceControl extends Actor with ActorLogging {
   import AServiceControl._
   import ImplicitRuntime._
   import system.dispatcher
+  implicit val timeout = Timeout(3.seconds)
 
   val workersCount = 2 // Runtime.getRuntime.availableProcessors
-
   var querySchedule: Option[Cancellable] = None
-
-  //(new Period().plusMinutes(23)).toStandardSeconds.getSeconds
 
   override def receive: Receive = serve(None, None, Nil)
 
   def serve(producer: Option[ActorRef], router: Option[ActorRef], workers: List[ActorRef]): Receive = {
-    case Start(dealerConfigs, estim) => { // TODO: Build estim here from configs
-      self ! Stop
-      DealersFactory.buildDealer(dealerConfigs.id) match {
-        case Success(dealer) => self ! Init(dealer, estim)
-        case Failure(NonFatal(e)) => log.error(s"[AServiceControl] Cannot start content service: `${e.getMessage}`")
-      }
+    case Start(dealer, estimator) => {
+      deactivate(producer, router, workers)
+      activate(dealer, estimator)
+      sender ! Status(ServiceStatus.Active)
     }
 
     case Stop => {
-      workers.foreach(context.stop)
-      router.foreach(system.stop)
-      producer.foreach(system.stop)
-      querySchedule.foreach(q => if (!q.isCancelled) q.cancel)
+      deactivate(producer, router, workers)
       log.info("[AServiceControl] Service successfully stopped.")
+      sender ! Status(ServiceStatus.Inactive)
       context.become(serve(None, None, Nil))
     }
 
-    case GetStatus => if (producer.isDefined && router.isDefined && workers.nonEmpty) sender ! Status(ServiceStatus.Active)
-    else sender ! Status(ServiceStatus.Inactive)
-
-    case Init(dealer, estim) => {
-      val prod = Some(system.actorOf(producerProps(dealer), "Producer"))
-      val frequency = dealer.estimatedQueryFrequency
-      querySchedule = Some(context.system.scheduler.schedule(frequency, frequency, prod.get, QueryTick))
-      val rout = Some(system.actorOf(routerProps(prod.get), "Router"))
-      val wrkrs = for (i <- 1 to workersCount)
-        yield context.actorOf(workerProps(estim, rout.get), "Worker-"+i)
-      log.info("[AServiceControl] Service successfully started.")
-      context.become(serve(prod, rout, wrkrs.toList))
+    case GetStatus => {
+      if (producer.isDefined && router.isDefined && workers.nonEmpty) sender ! Status(ServiceStatus.Active)
+      else sender ! Status(ServiceStatus.Inactive)
     }
+
+    case unexpected => log.error(s"[AServiceControl] Unexpected case type $unexpected");
+  }
+
+  def deactivate(producer: Option[ActorRef], router: Option[ActorRef], workers: List[ActorRef]) = {
+    workers.foreach(context.stop)
+    router.foreach(context.stop)
+    producer.foreach(context.stop)
+    querySchedule.foreach(q => if (!q.isCancelled) q.cancel)
+  }
+
+  def activate(dealer: ContentDealer, estim: ActualityEstimator) = {
+    val prod = Some(context.actorOf(producerProps(dealer), "Producer"))
+    val frequency = dealer.estimatedQueryFrequency
+    querySchedule = Some(context.system.scheduler.schedule(frequency, frequency, prod.get, QueryTick))
+    val rout = Some(context.actorOf(routerProps(prod.get), "Router"))
+    val wrkrs = for (i <- 1 to workersCount)
+      yield context.actorOf(workerProps(estim, rout.get), "Worker-"+i)
+    log.info("[AServiceControl] Service successfully started.")
+    context.become(serve(prod, rout, wrkrs.toList))
   }
 }

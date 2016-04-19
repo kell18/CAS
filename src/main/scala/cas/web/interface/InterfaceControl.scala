@@ -30,7 +30,7 @@ trait InterfaceControl extends HttpService {
   def route = respondWithMediaType(`text/html`) {
     IndexPage("", serviceControl) ~
     VkAuth(authVk) ~
-    ConfigurePage("configure") ~
+    ConfigurePage("configure", serviceControl) ~
     TestPage("t")
   }
 

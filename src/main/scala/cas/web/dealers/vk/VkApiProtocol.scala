@@ -12,7 +12,7 @@ import scala.collection.Map
 object VkApiProtocol extends DefaultJsonProtocol {
 
   case class VkApiConfigs(token: String, ownerId: Long, siftCount: Int)
-  implicit val vkApiSettingsFormat = jsonFormat3(VkApiConfigs)
+  implicit val vkApiConfigsFormat = jsonFormat3(VkApiConfigs)
 
 
   case class VkSimpleResponse(response: Int)

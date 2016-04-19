@@ -10,7 +10,6 @@ import cas.utils.Mathf.sec2Millis
 import cas.web.dealers.vk.VkApiProtocol._
 import cas.utils.StdImplicits._
 import cas.utils.UtilAliases._
-import com.sksamuel.elastic4s.ElasticClient
 import spray.client.pipelining._
 import spray.httpx.SprayJsonSupport._
 import org.joda.time.{DateTime, Period}
@@ -20,11 +19,11 @@ import scala.util.Try
 import spray.json._
 import cas.utils.StdImplicits.RightBiasedEither
 import scala.concurrent.duration._
-import com.sksamuel.elastic4s.ElasticDsl._
 import org.ccil.cowan.tagsoup.jaxp.SAXFactoryImpl
 import scala.xml.{Node, XML}
 import scala.xml.parsing.NoBindingFactoryAdapter
 import Utils._
+import cas.persistence.searching.SearchEngine
 
 object VkApiDealer {
   import VkApiProtocol._
@@ -34,19 +33,19 @@ object VkApiDealer {
   val apiVersion = "5.50"
 
   val actualityThreshold = 0.5
-  val filterableCount = 80
-  val queriesPerSec = 3
+  val filterableCount = 10
+  val queriesPerSec = 2
 
   val clientId = "5369112"
   val clientSecret = "fFZQIwuIPR5bXxRW0c0I"
   val scope = "wall,groups,stats,friends,offline"
 
-  def apply(rawConfigs: String)(implicit system: ActorSystem, client: ElasticClient) = for {
-    c <- Try(rawConfigs.parseJson.convertTo[VkApiConfigs])
-  } yield new VkApiDealer(c)
+  def apply(rawConfigs: String, searcher: SearchEngine)(implicit system: ActorSystem) = for {
+    cfg <- Try(rawConfigs.parseJson.convertTo[VkApiConfigs])
+  } yield new VkApiDealer(cfg, searcher)
 }
 
-class VkApiDealer(cfg: VkApiConfigs)(implicit val system: ActorSystem, client: ElasticClient) extends ContentDealer {
+class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system: ActorSystem) extends ContentDealer {
   import VkApiProtocol._
   import VkApiDealer._
   import system.dispatcher
@@ -100,7 +99,7 @@ class VkApiDealer(cfg: VkApiConfigs)(implicit val system: ActorSystem, client: E
       if estim.actuality < actualityThreshold
     } yield for {
       id <- estim.subj.getComponent[ID]
-     _ = logDelete(estim, "Deliting comment")
+     _ = logDelete(estim, "Deleting comment")
     } yield buildDelLine(cfg.ownerId.toString, id.value)).map(_.right.getOrElse("")).mkString // TODO: Rm
     if (scriptLines.nonEmpty) for {
       resp <- pipeline(Get(buildRequest("execute","access_token" -> cfg.token ::
@@ -114,8 +113,7 @@ class VkApiDealer(cfg: VkApiConfigs)(implicit val system: ActorSystem, client: E
   def pullTopPost = {
     if (postsToSift.nonEmpty) Future {
       val post = postsToSift.dequeue
-      val i = Math.min(Math.abs(filterableCount - postsToSift.length), filterableCount-1)
-      updateIndex(i.toString, post)
+      searcher.pushEntity(post.id.toString, post.text)
       Right(post)
     }
     else {
@@ -126,23 +124,11 @@ class VkApiDealer(cfg: VkApiConfigs)(implicit val system: ActorSystem, client: E
         resp <- respF.errorOrResp
       } yield {
         resp.items.tail.foreach(postsToSift.enqueue(_))
-        updateIndex("1", resp.items.head)
-        resp.items.head
+        val topPost = resp.items.head
+        searcher.pushEntity(topPost.id.toString, topPost.text)
+        topPost
       }
     }
-  }
-
-  def updateIndex(i: String, post: VkPost) = {
-
-
-    /*val upd = Try(client.execute { update id i in ind / shape doc(
-    "id" -> post.id.toString,
-    "text" -> getPostContent(post.text))
-  })
-  if (upd.isFailure) *//*client.execute { index into ind / shape id i fields(
-      "id" -> post.id.toString,
-      "text" -> getPostContent(post.text))
-    }*/
   }
 
   def getPostContent(post: String) = {
@@ -163,13 +149,12 @@ class VkApiDealer(cfg: VkApiConfigs)(implicit val system: ActorSystem, client: E
   def logDelete(estim: Estimation, action: String) = {
     println("[" + new DateTime().getHourOfDay + ":" + new DateTime().getMinuteOfHour + "] " + action + "with Actuality: " + estim.actuality + " " +
       " with likes cnt: " + estim.subj.getComponent[Likability].get.value +
-      " with time elapsed: " + new Period(estim.subj.getComponent[CreationDate].get.value, DateTime.now(Utils.timeZone)).toStandardSeconds.getSeconds + "sec"+
+      " with time elapsed: " + new Period(DateTime.now(Utils.timeZone), estim.subj.getComponent[CreationDate].get.value).toStandardSeconds.getSeconds + "sec"+
       "Text: " + estim.subj.getComponent[Description].get.text)
   }
 
   def buildDelLine(ownerId: String, id: String) =
     s"""API.wall.deleteComment({%22owner_id%22:%22$ownerId%22,%22comment_id%22:$id});"""
-//    escapeJava("API.wall.deleteComment({\"owner_id\":\"" + ownerId  + "\",\"comment_id\":" + id + "});")
 
   def buildRequest(method: String, params: List[(String, String)]) = Web.buildRequest(apiUrl)(method)(params)
 }
