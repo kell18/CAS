@@ -47,8 +47,14 @@ class AProducer(dealer: ContentDealer) extends Actor with ActorLogging { // TODO
       val estims = estimChunks.flatten // TODO: Optimize
       if (estims.nonEmpty) dealer.pushEstimations(estims) onComplete {
         case Success(Right(_)) => changeContext(consumers, Nil)
-        case Success(Left(err)) => {log.error(err); changeContext(consumers, Nil)}
-        case Failure(NonFatal(ex)) => {logWarning(ex); changeContext(consumers, Nil)}
+        case Success(Left(err)) => {
+          log.error(s"Dealer returns Left on pushEstims: `$err`");
+          changeContext(consumers, Nil)
+        }
+        case Failure(NonFatal(ex)) => {
+          log.warning(s"Dealer returns error on pushEstims: `${ex.getMessage}`");
+          changeContext(consumers, Nil)
+        }
       }
       else consumers match {
         case Nil => Unit
@@ -57,16 +63,15 @@ class AProducer(dealer: ContentDealer) extends Actor with ActorLogging { // TODO
             c ! PulledSubjects(chunk)
             changeContext(cs, estimChunks)
           }
-          case Success(Left(err)) => log.error(err)
-          case Failure(NonFatal(ex)) => logWarning(ex)
+          case Success(Left(err)) => log.error(s"Dealer returns Left on pullChunks: `$err`")
+          case Failure(NonFatal(ex)) => log.warning(s"Dealer returns error on pullChunks: " +
+            s"`${ex.getLocalizedMessage}` with stacktrace: `${ex.getStackTrace.mkString(", ")}`")  // TODO: Rm
         }
       }
     }
 
-    case x => log.warning("Unexpected case type in content producer: " + x)
+    case x => log.warning(s"Unexpected case type in content producer: $x")
   }
-
-  def logWarning(ex: Throwable) = log.warning(ex.getMessage)
 
 
   def changeContext(consumers: List[ActorRef], estims: List[Estimations]) = {

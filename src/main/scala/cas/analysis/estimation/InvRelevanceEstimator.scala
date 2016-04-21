@@ -29,6 +29,6 @@ class InvRelevanceEstimator(cfg: InvRelevanceConfigs) extends ActualityEstimator
     score = clampScore(resp.maxScore)
   } yield if (score > cfg.threshold) 1.0 else 0.0
 
-
+  // TODO (1): Add NaN check
   def clampScore(score: Option[Double]) = if (score.isEmpty) 0.0 else score.get
 }

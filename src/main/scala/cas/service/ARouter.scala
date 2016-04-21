@@ -1,9 +1,12 @@
 package cas.service
 
-import akka.actor.{Actor, ActorRef}
+import akka.actor.{Actor, ActorLogging, ActorRef}
 import akka.pattern.pipe
 import cas.analysis.subject.Subject
+import cas.persistence.searching.ElasticSearch
+import cas.utils.RemoteLogger
 import cas.utils.UtilAliases._
+
 import scala.collection.mutable
 import scala.collection.mutable.Queue
 
@@ -15,7 +18,7 @@ object ARouter {
   case class Estimation(subj: Subject, actuality: Double)
 }
 
-class ARouter(producer: ActorRef) extends Actor {
+class ARouter(producer: ActorRef) extends Actor with ActorLogging {
   import ARouter._
 
   val pulledSubjs = mutable.Queue.empty[PulledSubjects]
@@ -28,7 +31,7 @@ class ARouter(producer: ActorRef) extends Actor {
 
   override def receive = {
     case PullSubjects => {
-      //  println("[Rout] PullSubjects `" + pulledSubjs.mkString + "`")
+      RemoteLogger.info("PullSubjects `" + pulledSubjs.mkString + "`")
       if (pulledSubjs.isEmpty) waitingWorkers.enqueue(sender)
       else {
         sender ! pulledSubjs.dequeue
@@ -37,7 +40,8 @@ class ARouter(producer: ActorRef) extends Actor {
     }
 
     case PulledSubjects(chunk) => {
-      // println("[Rout] waitingWorkers: `" + waitingWorkers.mkString + "`")
+      RemoteLogger.info("PulledSubjects: `" + chunk.mkString + "`")
+      RemoteLogger.info("WaitingWorkers: `" + waitingWorkers.mkString + "`")
       if (waitingWorkers.isEmpty) pulledSubjs.enqueue(PulledSubjects(chunk))
       else {
         waitingWorkers.dequeue ! PulledSubjects(chunk)
@@ -46,7 +50,7 @@ class ARouter(producer: ActorRef) extends Actor {
     }
 
     case estims: PushingEstimations => {
-      // println("[Rout] PushingEstimations: `" + estims.estims.mkString + "`")
+      RemoteLogger.info("PushingEstimations: `" + estims.estims.mkString + "`")
       producer forward estims
     }
   }

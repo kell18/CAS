@@ -57,7 +57,8 @@ object VkApiProtocol extends DefaultJsonProtocol {
       JsObject("response" -> JsObject(fields: _*))
     }
     def read(value: JsValue) = {
-      val response = value.asJsObject.fields("response")
+      value.asJsObject.fields.contains("response")
+      val response = value.asJsObject.fields.apply("response") // TODO: Check here
       val count = fromField[Int](response, "count")
       val items = fromField[List[T]](response, "items")
       VkResponse[T](count, items)

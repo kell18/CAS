@@ -7,7 +7,6 @@ import cas.service.ARouter.Estimation
 import com.typesafe.config._
 import org.ccil.cowan.tagsoup.jaxp.SAXFactoryImpl
 import org.joda.time.DateTimeZone
-
 import scala.xml.{Node, XML}
 
 object Utils {
@@ -15,7 +14,7 @@ object Utils {
   val confPath = "resources/conf"
   val webModelPath = dataPath + "/web.model"
 
-  val timeZone = DateTimeZone.forOffsetHours(+3)
+  val timeZone = DateTimeZone.forOffsetHours(+4)
 
   val configs = ConfigFactory.load(
     ConfigFactory.parseFile(new File(confPath + "/application.conf"))

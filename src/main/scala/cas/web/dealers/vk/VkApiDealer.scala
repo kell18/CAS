@@ -13,17 +13,22 @@ import cas.utils.UtilAliases._
 import spray.client.pipelining._
 import spray.httpx.SprayJsonSupport._
 import org.joda.time.{DateTime, Period}
+
 import scala.collection.mutable
 import scala.concurrent.{Await, Future}
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 import spray.json._
 import cas.utils.StdImplicits.RightBiasedEither
+
 import scala.concurrent.duration._
 import org.ccil.cowan.tagsoup.jaxp.SAXFactoryImpl
+
 import scala.xml.{Node, XML}
 import scala.xml.parsing.NoBindingFactoryAdapter
 import Utils._
 import cas.persistence.searching.SearchEngine
+
+import scala.util.control.NonFatal
 
 object VkApiDealer {
   import VkApiProtocol._
@@ -60,19 +65,23 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
   override def pullSubjectsChunk: Future[Either[ErrorMsg, Subjects]] = {
     val pipeline = sendReceive ~> unmarshal[VkFallible[VkResponse[VkComment]]]
     for {
-      errorOrPost <- pullTopPost
+      errOrPost <- pullTopPost
     } yield for {
-      post <- errorOrPost.left.map(_.getMessage)
-      respF = Await.result(pipeline(Get(buildRequest("wall.getComments", "post_id" -> post.id.toString ::
-        "need_likes" -> "1" :: defaultParams))), 10.seconds)
-      resp <- respF.errorOrResp.left.map(_.getMessage)
+      post <- errOrPost.left.map(_.getMessage)
+      errOrResp <- Try(Await.result(pipeline(Get(buildRequest("wall.getComments", "post_id" -> post.id.toString ::
+        "need_likes" -> "1" :: defaultParams))), 10.seconds)).toEither.left.map(e => s"That error... `$e`")  // TODO: Rm
+      resp <- errOrResp.errorOrResp.left.map(_.getMessage)
     } yield for {
       comment <- resp.items
+      date = new DateTime(comment.date * sec2Millis)
+      /*_ = println("PastSecs: " + new Period(date, DateTime.now()).toStandardSeconds.getSeconds +
+                "Date: " + date +
+                "Comment: " + comment.text)*/
     } yield Subject(List(
         ID(comment.id.toString),
         Subject(List(ID(post.id.toString))),
         Likability(comment.likes.count.toDouble),
-        CreationDate(new DateTime(comment.date * sec2Millis, Utils.timeZone)),
+        CreationDate(new DateTime(comment.date * sec2Millis)),
         Description(comment.text)
     ))
   }
@@ -99,7 +108,7 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
       if estim.actuality < actualityThreshold
     } yield for {
       id <- estim.subj.getComponent[ID]
-     _ = logDelete(estim, "Deleting comment")
+     _ = logEstim(estim, "Deleting comment")
     } yield buildDelLine(cfg.ownerId.toString, id.value)).map(_.right.getOrElse("")).mkString // TODO: Rm
     if (scriptLines.nonEmpty) for {
       resp <- pipeline(Get(buildRequest("execute","access_token" -> cfg.token ::
@@ -108,20 +117,25 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
       vkResp <- resp.errorOrResp.left.map(_.getMessage)
     } yield vkResp
     else Future { Right(VkSimpleResponse(1)) }
+    Future { Right(VkSimpleResponse(1)) }
   }
 
   def pullTopPost = {
-    if (postsToSift.nonEmpty) Future {
-      val post = postsToSift.dequeue
-      searcher.pushEntity(post.id.toString, post.text)
-      Right(post)
+    val tp = if (postsToSift.nonEmpty) {
+      val post = postsToSift.dequeue // TODO: Mb problem here - concurrent queue access
+      Try { searcher.pushEntity(post.id.toString, post.text) } match {  // TODO: Rm
+        case Failure(NonFatal(ex)) => println(s"[pullTopPost] Cannot push entity to elastic: `${ex.getMessage}`")
+        case Success(x) => ()
+        case x => println(s"[pullTopPost] Cannot push entity to elastic...")
+      }
+      Future { Right(post) }
     }
     else {
       val pipeline = sendReceive ~> unmarshal[VkFallible[VkResponse[VkPost]]]
       for {
-        respF <- pipeline(Get(buildRequest("wall.get", "count" -> filterableCount.toString :: defaultParams)))
+        fallible <- pipeline(Get(buildRequest("wall.get", "count" -> filterableCount.toString :: defaultParams)))
       } yield for {
-        resp <- respF.errorOrResp
+        resp <- fallible.errorOrResp
       } yield {
         resp.items.tail.foreach(postsToSift.enqueue(_))
         val topPost = resp.items.head
@@ -129,6 +143,9 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
         topPost
       }
     }
+    var i = 1
+    tp foreach { p => println(s"Top post : $p + ${i+=1; i}") }
+    tp
   }
 
   def getPostContent(post: String) = {
@@ -146,11 +163,12 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
     else post
   }
 
-  def logDelete(estim: Estimation, action: String) = {
-    println("[" + new DateTime().getHourOfDay + ":" + new DateTime().getMinuteOfHour + "] " + action + "with Actuality: " + estim.actuality + " " +
+  def logEstim(estim: Estimation, action: String) = {
+    println("[" + new DateTime().getHourOfDay + ":" + new DateTime().getMinuteOfHour + "] " + action +
+      " with Actuality: " + estim.actuality + " " +
       " with likes cnt: " + estim.subj.getComponent[Likability].get.value +
-      " with time elapsed: " + new Period(DateTime.now(Utils.timeZone), estim.subj.getComponent[CreationDate].get.value).toStandardSeconds.getSeconds + "sec"+
-      "Text: " + estim.subj.getComponent[Description].get.text)
+      " with time elapsed: " + new Period(estim.subj.getComponent[CreationDate].get.value, DateTime.now()).toStandardSeconds.getSeconds + "sec"+
+      " Text: " + estim.subj.getComponent[Description].get.text)
   }
 
   def buildDelLine(ownerId: String, id: String) =

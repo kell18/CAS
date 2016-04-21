@@ -73,7 +73,12 @@ object ElasticProtocol extends DefaultJsonProtocol {
   implicit val esAckFormat = jsonFormat1(EsAck)
 }
 
-class ElasticSearch(val host: String, index: String = "cas-ind", mtype: String = "docs", ttl: Duration = Duration("48 hours"))
+object ElasticSearch {
+  val defaultHost = "http://localhost:9201"
+}
+
+class ElasticSearch(val host: String = ElasticSearch.defaultHost, index: String = "cas-ind",
+                    mtype: String = "docs", ttl: Duration = Duration("48 hours"))
                    (implicit val system: ActorSystem) extends SearchEngine {
   import ElasticProtocol._
   import spray.httpx.SprayJsonSupport._
@@ -100,6 +105,13 @@ class ElasticSearch(val host: String, index: String = "cas-ind", mtype: String =
     val data = s"""{ "$fieldName": "$entity" }"""
     val pipeline = sendReceive ~> unmarshal[EsFallible[ShortResponse]]
     pipeline(Put(Uri(url), data)) map { _.errorOrResp map {_.isCreated} }
+  }
+
+  def pushEntity(entity: => String) = {
+    val url = address
+    val data = s"""{ "$fieldName": "$entity" }"""
+    val pipeline = sendReceive ~> unmarshal[EsFallible[ShortResponse]]
+    pipeline(Post(Uri(url), data)) map { _.errorOrResp map {_.isCreated} }
   }
 
   def delEntity(id: String) = {

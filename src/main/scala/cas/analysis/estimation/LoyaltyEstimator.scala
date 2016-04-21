@@ -22,7 +22,7 @@ class LoyaltyEstimator(cfg: LoyaltyConfigs) extends ActualityEstimator(cfg) {
 
   /** Estimate loyalty based on likes weight in period of time (scores) */
   def estimateLoyalty(likes: Double, repost: Double, subjDate: DateTime, subj: Subject) = {
-    val pastTime = new Period(DateTime.now(Utils.timeZone), subjDate).toStandardSeconds.getSeconds
+    val pastTime = new Period(subjDate, DateTime.now()).toStandardSeconds.getSeconds
     var loyalty = 0.0
     cfg.scores.foldLeft(Period.ZERO -> cfg.scores.head._2) ((prev, next) => { // Fr zero
       val prevTime = prev._1.toStandardSeconds.getSeconds
