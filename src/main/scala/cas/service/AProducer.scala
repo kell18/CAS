@@ -48,11 +48,11 @@ class AProducer(dealer: ContentDealer) extends Actor with ActorLogging { // TODO
       if (estims.nonEmpty) dealer.pushEstimations(estims) onComplete {
         case Success(Right(_)) => changeContext(consumers, Nil)
         case Success(Left(err)) => {
-          log.error(s"Dealer returns Left on pushEstims: `$err`");
+          log.error(s"Dealer returns Left on pushEstims: `$err`")
           changeContext(consumers, Nil)
         }
         case Failure(NonFatal(ex)) => {
-          log.warning(s"Dealer returns error on pushEstims: `${ex.getMessage}`");
+          log.warning(s"Dealer returns error on pushEstims: `${ex.getMessage}`")
           changeContext(consumers, Nil)
         }
       }

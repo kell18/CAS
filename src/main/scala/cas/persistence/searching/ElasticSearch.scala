@@ -101,8 +101,9 @@ class ElasticSearch(val host: String = ElasticSearch.defaultHost, index: String 
   }
 
   def pushEntity(id: String, entity: => String) = {
+    import org.apache.commons.lang3.StringEscapeUtils
     val url = address + "/" + id
-    val data = s"""{ "$fieldName": "$entity" }"""
+    val data = s"""{ "$fieldName": "${StringEscapeUtils.escapeJson(entity)}" }"""
     val pipeline = sendReceive ~> unmarshal[EsFallible[ShortResponse]]
     pipeline(Put(Uri(url), data)) map { _.errorOrResp map {_.isCreated} }
   }

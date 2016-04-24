@@ -16,7 +16,11 @@ libraryDependencies += "org.ccil.cowan.tagsoup" % "tagsoup" % "1.2"
 
 libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.6"
 
+libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.1.0"
+
 libraryDependencies += "org.typelevel" %% "cats" % "0.4.1"
+
+libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.4"
 
 libraryDependencies ++= {
   val akkaV = "2.3.9"

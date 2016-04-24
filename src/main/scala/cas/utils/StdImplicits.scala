@@ -9,7 +9,9 @@ object StdImplicits {
     def foreach[U](f: B => U): Unit = e.right.foreach(f)
     def map[C](f: B => C): Either[A, C] = e.right.map(f)
     def flatMap[C](f: B => Either[A, C]) = e.right.flatMap(f)
+    def filter[C](p: B => Boolean, err: ErrorMsg = "") = e.right.filter[ErrorMsg](p).getOrElse(Left(err))
 
+    def transform[AA, BB](fa: A => AA, fb: B => BB): Either[AA, BB] = e.left.map[AA](fa).map[BB](fb)
     def transformLeft[C](lTransform: A => C) = e.left.map(lTransform)
 
     def get = e.right.get
