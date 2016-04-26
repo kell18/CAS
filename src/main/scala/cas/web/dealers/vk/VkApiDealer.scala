@@ -1,5 +1,7 @@
 package cas.web.dealers.vk
 
+import java.net.URLEncoder
+
 import akka.actor.ActorSystem
 import cas.analysis.subject.Subject
 import cas.analysis.subject.components._
@@ -26,12 +28,11 @@ import Utils._
 import cas.persistence.searching.SearchEngine
 import scala.util.control.NonFatal
 import java.util.concurrent.{BlockingQueue, LinkedBlockingQueue}
-import org.apache.commons.lang3.StringEscapeUtils.escapeEcmaScript
 
 object VkApiDealer {
   import VkApiProtocol._
 
-  val id = "VkApi"
+  val id = "VkApi.json"
   val apiUrl = "https://api.vk.com/method/"
   val apiVersion = "5.50"
 
@@ -52,28 +53,26 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
   import VkApiProtocol._
   import VkApiDealer._
   import system.dispatcher
-  val ind = "rbc"
-  val shape = "posts"
 
+  var startPostInd = -cfg.postsPerQuery
   val postsToSift = new LinkedBlockingQueue[VkPost]()
   val defaultParams = "owner_id" -> cfg.ownerId.toString :: "v" -> apiVersion :: Nil
 
   override def estimatedQueryFrequency = 1.second / queriesPerSec
 
-  var postsPerQuery = 3
-  var startPostInd = -postsPerQuery
-
-  /*def pullSubjects: Future[Either[ErrorMsg, Subjects]] = {
+  override def pullSubjectsChunk: Future[Either[ErrorMsg, Subjects]] = {
     val pipeline = sendReceive ~> unmarshal[VkFallible[VkResponse[VkPostsComments]]]
-    startPostInd = Math.min((startPostInd + postsPerQuery) % filterableCount, filterableCount)
+    startPostInd = if (startPostInd + cfg.postsPerQuery >= cfg.siftCount) 0 else startPostInd + cfg.postsPerQuery
+    val postsCount = Math.min(cfg.siftCount - startPostInd, cfg.postsPerQuery)
+    // println("startPostInd: " + startPostInd + ", pCnt: " + postsCount)
     for {
       resp <- pipeline(Get(buildRequest("execute", "access_token" -> cfg.token :: "v" -> apiVersion ::
-        "code" -> escapeEcmaScript(commentsQuery(startPostInd, postsPerQuery)) :: Nil)))
+        "code" -> URLEncoder.encode(commentsQuery(startPostInd, postsCount), "UTF-8") :: Nil)))
     } yield for {
       postsComments <- resp.errorOrResp.transform(_.getMessage, _.items)
     } yield for {
       VkPostsComments(post, comments) <- postsComments
-      _ = searcher.pushEntity(post.id.toString, post.text)
+      _ = updateIndex(post)
       comment <- comments
     } yield Subject(List(
       ID(comment.id.toString),
@@ -82,9 +81,9 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
       CreationDate(new DateTime(comment.date * sec2Millis)),
       Description(comment.text)
     ))
-  }*/
+  }
 
-  override def pullSubjectsChunk: Future[Either[ErrorMsg, Subjects]] = {
+  def pullSubjectsChunk1: Future[Either[ErrorMsg, Subjects]] = {
     val pipeline = sendReceive ~> unmarshal[VkFallible[VkResponse[VkComment]]]
     for {
       errOrPost <- pullTopPost
@@ -142,6 +141,15 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
     Future { Right(VkSimpleResponse(1)) }
   }
 
+  // TODO: Make unified logging
+  def updateIndex(post: VkPost) = {
+    searcher.pushEntity(post.id.toString, post.getFullText) onComplete {
+      case Success(Left(err)) => println(s"Cannot push entity to searcher: $err")
+      case Failure(ex) => println(s"Cannot push entity to searcher: ${ex.getMessage}")
+      case elze => ()
+    }
+  }
+
   // TODO: Make simple queue of indexes
   def pullTopPost = {
     import java.util.concurrent.TimeUnit
@@ -196,29 +204,29 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
       " Text: " + estim.subj.getComponent[Description].get.text)
   }
 
-  /*def commentsQuery(startPostInd: Long, postsCount: Int) =
+  def commentsQuery(startPostInd: Long, postsCount: Int) =
     s"""
-      | var posts = API.wall.get({"offset": $startPostInd, "count": $postsCount, "owner_id": ${cfg.ownerId}}).items;
+      | var posts = API.wall.get({"offset": $startPostInd, "count": $postsCount, "owner_id": ${cfg.ownerId}});
       | var postComments = [];
       | var postInd = 0;
       | var fetchAmt = 100;
       | while (postInd < $postsCount) {
       |  var comments = API.wall.getComments({"owner_id": ${cfg.ownerId},
-      |     "post_id": posts[postInd].id, "count": fetchAmt, "need_likes": 1});
+      |     "post_id": posts.items[postInd].id, "count": fetchAmt, "need_likes": 1});
       |  var fetchedComments = comments.items.length;
       |  while (fetchedComments < comments.count) {
       |   comments.items = comments.items + (API.wall.getComments({"owner_id": ${cfg.ownerId},
-      |     "offset": fetchedComments, "post_id": posts[postInd].id, "count": fetchAmt, "need_likes": 1}).items);
+      |     "offset": fetchedComments, "post_id": posts.items[postInd].id, "count": fetchAmt, "need_likes": 1}).items);
       |   fetchedComments = fetchedComments + fetchAmt;
       |  }
       |   postComments.push({
-      |     "post": posts[postInd],
+      |     "post": posts.items[postInd],
       |     "comments": comments.items
       |   });
       |   postInd = postInd + 1;
       | }
       | return { "count": postComments.length, "items": postComments };
-    """.stripMargin*/
+    """.stripMargin
 
 
   def buildDelLine(ownerId: String, id: String) =

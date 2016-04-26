@@ -9,7 +9,7 @@ import scala.util.Try
 object DealersFactory {
   import cas.web.interface.ImplicitRuntime._
 
-  // TODO: Pass al cfg
+  // TODO: Pass searcher as cfg (something like enum in json)
   def buildDealer(id: String, searcher: SearchEngine): Try[ContentDealer] = for {
     conf <- Files.readFile(Files.dealers + "/" + id)
     dealer <- dealersLookup(id)(conf, searcher)

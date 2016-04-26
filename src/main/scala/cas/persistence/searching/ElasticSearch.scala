@@ -17,7 +17,8 @@ import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 import cas.utils.StdImplicits.RightBiasedEither
 import cas.utils.UtilAliases.ErrorMsg
-
+import org.apache.commons.lang3.StringEscapeUtils
+import org.apache.commons.lang3.StringEscapeUtils.escapeJson
 
 object ElasticProtocol extends DefaultJsonProtocol {
   val fieldName = "doc"
@@ -89,7 +90,8 @@ class ElasticSearch(val host: String = ElasticSearch.defaultHost, index: String 
 
   def queryEntityScore(entity: => String) = {
     val url = address + "/_search"
-    val data = s"""{ \"query\": { \"match\": { \"$fieldName\": { \"analyzer\": \"$analyzer\", \"query\": \"$entity\" } } } }"""
+    val data = s"""{ \"query\": { \"match\": { \"$fieldName\": { \"analyzer\": \"$analyzer\",
+                                  \"query\": \"${escapeJson(entity)}\" } } } }""".stripMargin
     val pipeline = sendReceive ~> unmarshal[EsFallible[SearchResponse]]
     pipeline(Get(Uri(url), data)) map { _.errorOrResp }
   }
@@ -101,18 +103,17 @@ class ElasticSearch(val host: String = ElasticSearch.defaultHost, index: String 
   }
 
   def pushEntity(id: String, entity: => String) = {
-    import org.apache.commons.lang3.StringEscapeUtils
     val url = address + "/" + id
-    val data = s"""{ "$fieldName": "${StringEscapeUtils.escapeJson(entity)}" }"""
+    // println("Entity: " + escapeJson(entity))
+    val data = s"""{ "$fieldName": "${escapeJson(entity)}" }"""
     val pipeline = sendReceive ~> unmarshal[EsFallible[ShortResponse]]
     pipeline(Put(Uri(url), data)) map { _.errorOrResp map {_.isCreated} }
   }
 
   def pushEntity(entity: => String) = {
-    val url = address
-    val data = s"""{ "$fieldName": "$entity" }"""
+    val data = s"""{ "$fieldName": "${escapeJson(entity)}" }"""
     val pipeline = sendReceive ~> unmarshal[EsFallible[ShortResponse]]
-    pipeline(Post(Uri(url), data)) map { _.errorOrResp map {_.isCreated} }
+    pipeline(Post(Uri(address), data)) map { _.errorOrResp map {_.isCreated} }
   }
 
   def delEntity(id: String) = {

@@ -26,17 +26,19 @@ object VkAuth {
 
 	def apply(pagePath: String) = path(pagePath) {
     get {
-      parameter("code".?, "owner_id".as[Long].?, "sifting_posts".as[Int].?) { (code, ownerId, sCount) =>
+      parameter("code".?, "owner_id".as[Long].?, "sifting_posts".as[Int].?, "posts_per_q".as[Int].?)
+      { (code, ownerId, sCount, postsPerQ) =>
         val fileConfigs = Files.readFile(persistPath)
                                 .map(_.parseJson.convertTo[VkApiConfigs])
-                                .recover { case NonFatal(ex) => VkApiConfigs(null, 0, 0) }
+                                .recover { case NonFatal(ex) => VkApiConfigs(null, 0, 0, 0) }
         val token = if (code.isDefined) Try(Await.result(pullToken(code.get, domain + pagePath), 10.seconds))
                     else fileConfigs.flatMap(c => if (c.token != null) Success(c.token)
-                                                  else Failure(new Exception("No token")))
+                                                  else Failure(new Exception("No token found")))
         val resultConfigs = for {
           t <- token
           c <- fileConfigs
-        } yield VkApiConfigs(t, ownerId.getOrElse(c.ownerId), sCount.getOrElse(c.siftCount))
+        } yield VkApiConfigs(t, ownerId.getOrElse(c.ownerId), sCount.getOrElse(c.siftCount),
+                             postsPerQ.getOrElse(c.postsPerQuery))
         resultConfigs.foreach(c => {
           Files.writeToFile(Files.currentDealer, UsingDealer(VkApiDealer.id).toJson.prettyPrint)
           Files.writeToFile(persistPath, c.toJson.prettyPrint)
@@ -59,6 +61,8 @@ object VkAuth {
                   <input type="number" name="owner_id" value={resultConfigs.map(_.ownerId).getOrElse(0).toString} />
                   <label>Count of posts to filter</label>
                   <input type="number" name="sifting_posts" value={resultConfigs.map(_.siftCount).getOrElse(0).toString} />
+                  <label>Count of pulling posts for comments per query</label>
+                  <input type="number" name="posts_per_q" value={resultConfigs.map(_.postsPerQuery).getOrElse(0).toString} />
                   <input type="submit" value="Update settings" />
                 </form>
               }}

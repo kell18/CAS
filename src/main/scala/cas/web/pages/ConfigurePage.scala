@@ -41,7 +41,7 @@ object ConfigurePage {
         val searcher = new ElasticSearch("http://localhost:9201", "rbc-posts", "posts")
         val errOrEstim = createEstimator(
           LoyaltyConfigs(Map(
-            new Period().plusSeconds(25) ->  1.0),
+            new Period().plusSeconds(10) ->  1.0),
             0.5),
           InvRelevanceConfigs(searcher, 0.121, 0.5))
 

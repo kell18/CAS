@@ -69,6 +69,7 @@ class AServiceControl extends Actor with ActorLogging {
     case unexpected => log.error(s"[AServiceControl] Unexpected case type $unexpected");
   }
 
+  // TODO: Graceful stop
   def deactivate(producer: Option[ActorRef], router: Option[ActorRef], workers: List[ActorRef]) = {
     workers.foreach(context.stop)
     router.foreach(context.stop)
@@ -80,6 +81,7 @@ class AServiceControl extends Actor with ActorLogging {
     val prod = Some(context.actorOf(producerProps(dealer), "Producer"))
     val frequency = dealer.estimatedQueryFrequency
     querySchedule = Some(context.system.scheduler.schedule(frequency, frequency, prod.get, QueryTick))
+    context.system.scheduler.maxFrequency
     val rout = Some(context.actorOf(routerProps(prod.get), "Router"))
     val wrkrs = for (i <- 1 to workersCount)
       yield context.actorOf(workerProps(estim, rout.get), "Worker-"+i)
