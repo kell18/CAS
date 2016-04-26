@@ -5,11 +5,13 @@ System for analysis actuality of comments, feedback, etc.
 <br>
 
 #####Actuality metrics:
-- Virality - user sympathy (likes, reposts, rates)
-- Inverse relevance - score from elasticsearch
-- Semantics - entity extraction and their comparison
+- _Likeability_ - user sympathy
+- _Inverse relevance_ - score from elasticsearch
+- _Semantics_ - entity extraction and their comparison
 
-######Realized features:
+<br>
+
+#####Realized features:
 - Estimators:
   - [x] Virality
   - [x] Inverse relevance
@@ -17,12 +19,13 @@ System for analysis actuality of comments, feedback, etc.
 - [x] Vk API communication
 - [x] Elasticsearch interaction
 
-######Futher work
+#####Futher work
 - [ ] Semantics
 - [ ] Using gathered metrics to train model for predicting actuality
-- [ ] Geolocation, worldviews, and other client-specific requirements.
 
-######Architecture
+<br>
+
+#####Architecture
 Main abstraction - `Subject`, container of components (description, likes, ...).
 
 `Subject` comes from `Producer`s and evaluating by `ActualityEstimator`s into `Estimations`.
@@ -30,7 +33,7 @@ Main abstraction - `Subject`, container of components (description, likes, ...).
 Estimations sent to the `Dealer`s.
 
 
-Subject Components:
+#####Subject Components:
 - ID
 - object
 - virality
