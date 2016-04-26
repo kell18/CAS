@@ -46,12 +46,6 @@ class ContentServiceSpec extends Specification with NoTimeConversions {
           }
         }
 
-        override def pushEstimation(estim: Estimation): Future[Either[String, Any]] = {
-          pushedEstimations = estim :: pushedEstimations
-          isPushed = true
-          Future { Right(true) }
-        }
-
         override def pushEstimations(es: Estimations) = {
           pushedEstimations = es ::: pushedEstimations
           isPushed = true

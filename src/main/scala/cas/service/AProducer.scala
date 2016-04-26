@@ -5,10 +5,11 @@ import cas.analysis.estimation._
 import cas.analysis.subject.components.Description
 import cas.utils.UtilAliases._
 import cas.utils.StdImplicits.RightBiasedEither
+
 import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.util.control.NonFatal
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 object AProducer {
   case object QueryTick
@@ -25,6 +26,8 @@ class AProducer(dealer: ContentDealer) extends Actor with ActorLogging { // TODO
   import cas.web.interface.ImplicitRuntime._
   import system.dispatcher
 
+  val timeout = 10.seconds // TODO: Make global
+
   override def preStart = {
     super.preStart()
     log.info("[AContentService] preStart")
@@ -34,7 +37,7 @@ class AProducer(dealer: ContentDealer) extends Actor with ActorLogging { // TODO
 
   override def postStop = {
     super.postStop()
-    log.info("[AContentService] postStop")
+    log.info("postStop")
   }
 
   def serve(consumers: List[ActorRef], estimChunks: List[Estimations]): Receive = {
@@ -44,25 +47,22 @@ class AProducer(dealer: ContentDealer) extends Actor with ActorLogging { // TODO
     case PushingEstimations(chunk) => changeContext(consumers, chunk :: estimChunks)
 
     case QueryTick => {
-      val estims = estimChunks.flatten // TODO: Optimize
-      if (estims.nonEmpty) dealer.pushEstimations(estims) onComplete {
+      val estims = estimChunks.flatten // TODO: Send one by one chunk
+      if (estims.nonEmpty) Try(Await.result(dealer.pushEstimations(estims), timeout)) match {
         case Success(Right(_)) => changeContext(consumers, Nil)
-        case Success(Left(err)) => {
+        case Success(Left(err)) =>
           log.error(s"Dealer returns Left on pushEstims: `$err`")
           changeContext(consumers, Nil)
-        }
-        case Failure(NonFatal(ex)) => {
+        case Failure(NonFatal(ex)) =>
           log.warning(s"Dealer returns error on pushEstims: `${ex.getMessage}`")
           changeContext(consumers, Nil)
-        }
       }
       else consumers match {
         case Nil => Unit
         case c::cs => dealer.pullSubjectsChunk onComplete {
-          case Success(Right(chunk)) => {
+          case Success(Right(chunk)) =>
             c ! PulledSubjects(chunk)
             changeContext(cs, estimChunks)
-          }
           case Success(Left(err)) => log.error(s"Dealer returns Left on pullChunks: `$err`")
           case Failure(NonFatal(ex)) => log.warning(s"Dealer returns error on pullChunks: " +
             s"`${ex.getLocalizedMessage}` with stacktrace: `${ex.getStackTrace.mkString(", ")}`")  // TODO: Rm
@@ -72,7 +72,6 @@ class AProducer(dealer: ContentDealer) extends Actor with ActorLogging { // TODO
 
     case x => log.warning(s"Unexpected case type in content producer: $x")
   }
-
 
   def changeContext(consumers: List[ActorRef], estims: List[Estimations]) = {
     if (estims.flatten.length > 25) {

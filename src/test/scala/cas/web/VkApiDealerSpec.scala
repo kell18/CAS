@@ -49,7 +49,7 @@ class VkApiDealerSpec extends Specification with NoTimeConversions {
       val dealer = DealersFactory.buildDealer(VkApiDealer.id, createTestingElasticS())
       dealer must beSuccessfulTry
       val fake = new Estimation(Subject(List()), 0.0)
-      val response = Await.result(dealer.get.pushEstimation(fake), 10.seconds)
+      val response = Await.result(dealer.get.pushEstimations(fake :: Nil), 10.seconds)
       response must beLeft
     }
   }

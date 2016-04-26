@@ -37,7 +37,7 @@ class ARouter(producer: ActorRef) extends Actor with ActorLogging {
   override def receive = {
     case PullSubjects => {
       // RemoteLogger.info("PullSubjects `" + pulledSubjs.mkString + "`")
-      log.info("PullSubjects request")
+      // log.info("PullSubjects request")
       if (pulledSubjs.isEmpty) waitingWorkers.offer(sender, 1000, TimeUnit.MILLISECONDS)
       else {
         sender ! pulledSubjs.poll(1000, TimeUnit.MILLISECONDS)
@@ -48,7 +48,7 @@ class ARouter(producer: ActorRef) extends Actor with ActorLogging {
     case PulledSubjects(chunk) => {
       /*RemoteLogger.info("PulledSubjects: `" + chunk.mkString + "`")
       RemoteLogger.info("WaitingWorkers: `" + waitingWorkers.mkString + "`")*/
-      log.info("Subjects pooled: " + chunk)
+      // log.info("Subjects pooled: " + chunk)
       if (waitingWorkers.isEmpty) pulledSubjs.offer(PulledSubjects(chunk), 1000, TimeUnit.MILLISECONDS)
       else {
         waitingWorkers.poll(1000, TimeUnit.MILLISECONDS) ! PulledSubjects(chunk)
@@ -58,7 +58,7 @@ class ARouter(producer: ActorRef) extends Actor with ActorLogging {
 
     case estims: PushingEstimations => {
       // RemoteLogger.info("PushingEstimations: `" + estims.estims.mkString + "`")
-      log.info("Estimations computed: " + estims.estims)
+      // log.info("Estimations computed: " + estims.estims)
       producer forward estims
     }
   }

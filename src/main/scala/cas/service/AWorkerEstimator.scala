@@ -11,8 +11,6 @@ import scala.concurrent.Future
 
 class AWorkerEstimator(estimator: ActualityEstimator, router: ActorRef) extends Actor with ActorLogging {
   import ARouter._
-  import cas.web.interface.ImplicitRuntime._
-  import system.dispatcher
 
   override def preStart(): Unit = {
     super.preStart()
@@ -20,27 +18,25 @@ class AWorkerEstimator(estimator: ActualityEstimator, router: ActorRef) extends 
   }
 
   override def receive = {
-    case PulledSubjects(chunk) => {
-      Future { makeEstimations(chunk) }.map(PushingEstimations).pipeTo(sender)
+    case PulledSubjects(chunk) =>
+      sender ! PushingEstimations(makeEstimations(chunk))
       router ! PullSubjects
-    }
     case x => log.warning("[AContentEstimator] Unexpected case type: " + x)
   }
 
   @tailrec
   final def makeEstimations(subjs: List[Subject], estims: List[Estimation] = Nil,
                             error: Option[String] = None): List[Estimation] = subjs match {
-    case Nil => {
+    case Nil =>
       if (error.isDefined) log.error(error.get)
       estims
-    }
-    case s::xs => {
+
+    case s::xs =>
       val estim = estimator.estimateActuality(s)
       if (estim.isRight) makeEstimations(xs, Estimation(s, estim.right.get) :: estims, error)
       else {
         // TODO: May be compare errors and log different
         makeEstimations(xs, estims, Some(estim.left.get))
       }
-    }
   }
 }

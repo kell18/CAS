@@ -55,7 +55,6 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
   import system.dispatcher
 
   var startPostInd = -cfg.postsPerQuery
-  val postsToSift = new LinkedBlockingQueue[VkPost]()
   val defaultParams = "owner_id" -> cfg.ownerId.toString :: "v" -> apiVersion :: Nil
 
   override def estimatedQueryFrequency = 1.second / queriesPerSec
@@ -64,7 +63,7 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
     val pipeline = sendReceive ~> unmarshal[VkFallible[VkResponse[VkPostsComments]]]
     startPostInd = if (startPostInd + cfg.postsPerQuery >= cfg.siftCount) 0 else startPostInd + cfg.postsPerQuery
     val postsCount = Math.min(cfg.siftCount - startPostInd, cfg.postsPerQuery)
-    // println("startPostInd: " + startPostInd + ", pCnt: " + postsCount)
+    println("startPostInd: " + startPostInd + ", pCnt: " + postsCount)
     for {
       resp <- pipeline(Get(buildRequest("execute", "access_token" -> cfg.token :: "v" -> apiVersion ::
         "code" -> URLEncoder.encode(commentsQuery(startPostInd, postsCount), "UTF-8") :: Nil)))
@@ -83,46 +82,6 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
     ))
   }
 
-  def pullSubjectsChunk1: Future[Either[ErrorMsg, Subjects]] = {
-    val pipeline = sendReceive ~> unmarshal[VkFallible[VkResponse[VkComment]]]
-    for {
-      errOrPost <- pullTopPost
-    } yield for {
-      post <- errOrPost
-      errOrResp <- Try(Await.result(pipeline(Get(buildRequest("wall.getComments", "post_id" -> post.id.toString ::
-        "need_likes" -> "1" :: defaultParams))), 10.seconds)).toEither.left.map(e => s"That error... `$e`")  // TODO: Rm
-      resp <- errOrResp.errorOrResp.left.map(_.getMessage)
-    } yield for {
-      comment <- resp.items
-      date = new DateTime(comment.date * sec2Millis)
-      /*_ = println("PastSecs: " + new Period(date, DateTime.now()).toStandardSeconds.getSeconds +
-                "Date: " + date +
-                "Comment: " + comment.text)*/
-    } yield Subject(List(
-        ID(comment.id.toString),
-        Subject(List(ID(post.id.toString))),
-        Likability(comment.likes.count.toDouble),
-        CreationDate(new DateTime(comment.date * sec2Millis)),
-        Description(comment.text)
-    ))
-  }
-
-  // TODO: Mb remove
-  override def pushEstimation(estimation: Estimation): Future[Either[ErrorMsg, Any]] = Future {
-    val pipeline = sendReceive ~> unmarshal[VkFallible[VkSimpleResponse]]
-    if (estimation.actuality < actualityThreshold) {
-      for {
-        id <- estimation.subj.getComponent[ID]
-        post <- estimation.subj.getComponent[Subject]
-        postId <- post.getComponent[ID]
-        respF <- Try(Await.result(pipeline(Get(buildRequest("wall.deleteComment", "access_token" -> cfg.token ::
-          "comment_id" -> id.value :: defaultParams))), 10.seconds)).toEither.left.map(_.getMessage)
-        resp <- respF.errorOrResp.left.map(_.getMessage)
-      } yield VkSimpleResponse(1)
-    }
-    else Right(VkSimpleResponse(1))
-  }
-
   override def pushEstimations(estims: Estimations): Future[Either[ErrorMsg, Any]] = {
     val pipeline = sendReceive ~> unmarshal[VkFallible[VkSimpleResponse]]
     val scriptLines = (for {
@@ -138,7 +97,7 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
     } yield for {
       vkResp <- resp.errorOrResp.left.map(_.getMessage)
     } yield vkResp
-    Future { Right(VkSimpleResponse(1)) }
+    else Future { Right(VkSimpleResponse(1)) }
   }
 
   // TODO: Make unified logging
@@ -147,35 +106,6 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
       case Success(Left(err)) => println(s"Cannot push entity to searcher: $err")
       case Failure(ex) => println(s"Cannot push entity to searcher: ${ex.getMessage}")
       case elze => ()
-    }
-  }
-
-  // TODO: Make simple queue of indexes
-  def pullTopPost = {
-    import java.util.concurrent.TimeUnit
-    import spray.json.DefaultJsonProtocol // TODO: Rm
-    if (!postsToSift.isEmpty) {
-      val post = postsToSift.poll(1000, TimeUnit.MILLISECONDS) // TODO: Mb problem here - concurrent queue access
-      searcher.pushEntity(post.id.toString, post.getFullText) onComplete {
-        case Success(Left(err)) => println(s"Cannot push entity to searcher: $err")
-        case Failure(ex) => println(s"Cannot push entity to searcher: ${ex.getMessage}")
-        case elze => ()
-      }
-      Future { Right(post) }
-    }
-    else {
-      val pipeline = sendReceive ~> unmarshal[VkFallible[VkResponse[VkPost]]]
-      for {
-        fallible <- pipeline(Get(buildRequest("wall.get", "count" -> filterableCount.toString :: defaultParams)))
-      } yield for {
-        resp <- fallible.errorOrResp.left.map(_.getMessage)
-                .filter(i => i.items.nonEmpty, "VK return zero items for wall.get")
-        _ = resp.items.foreach(i => postsToSift.offer(i, 1000, TimeUnit.MILLISECONDS))
-      } yield {
-        val topPost = postsToSift.poll(1000, TimeUnit.MILLISECONDS)
-        searcher.pushEntity(topPost.id.toString, topPost.getFullText)
-        topPost
-      }
     }
   }
 
@@ -228,7 +158,7 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
       | return { "count": postComments.length, "items": postComments };
     """.stripMargin
 
-
+  // TODO: Make like commentsQuery
   def buildDelLine(ownerId: String, id: String) =
     s"""API.wall.deleteComment({%22owner_id%22:%22$ownerId%22,%22comment_id%22:$id});"""
 
