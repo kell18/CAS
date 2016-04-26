@@ -18,7 +18,7 @@ System for analysis actuality of comments, feedback, etc.
 - [x] Vk API communication
 - [x] Elasticsearch interaction
 
-#####Futher work
+#####Further work
 - [ ] Semantics
 - [ ] Using gathered metrics to train model for predicting actuality
 
