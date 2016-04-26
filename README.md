@@ -12,9 +12,8 @@ System for analysis actuality of comments, feedback, etc.
 <br>
 
 #####Realized features:
-- Estimators:
-  - [x] Virality
-  - [x] Inverse relevance
+- [x] Virality estimator
+- [x] Inverse relevance estimator
 - [x] Framework on Scala
 - [x] Vk API communication
 - [x] Elasticsearch interaction
