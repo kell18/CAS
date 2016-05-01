@@ -63,7 +63,7 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
     val pipeline = sendReceive ~> unmarshal[VkFallible[VkResponse[VkPostsComments]]]
     startPostInd = if (startPostInd + cfg.postsPerQuery >= cfg.siftCount) 0 else startPostInd + cfg.postsPerQuery
     val postsCount = Math.min(cfg.siftCount - startPostInd, cfg.postsPerQuery)
-    println("startPostInd: " + startPostInd + ", pCnt: " + postsCount)
+    // println("startPostInd: " + startPostInd + ", pCnt: " + postsCount)
     for {
       resp <- pipeline(Get(buildRequest("execute", "access_token" -> cfg.token :: "v" -> apiVersion ::
         "code" -> URLEncoder.encode(commentsQuery(startPostInd, postsCount), "UTF-8") :: Nil)))

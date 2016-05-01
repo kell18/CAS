@@ -5,9 +5,9 @@ System for analysis actuality of comments, feedback, etc.
 <br>
 
 #####Actuality metrics:
-- _Likeability_ - user sympathy
-- _Inverse relevance_ - score from elasticsearch
-- _Semantics_ - entity extraction and their comparison
+- _Likeability_         - user sympathy
+- _Inverse relevance_   - score from elasticsearch
+- _Semantics_           - entity extraction and their comparison
 
 <br>
 
@@ -45,3 +45,6 @@ Estimations sent to the `Dealer`s.
 - attachments
 - rate
 - title
+
+
+Albert Bikeev.
