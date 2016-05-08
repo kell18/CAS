@@ -37,7 +37,6 @@ object VkApiDealer {
   val apiVersion = "5.50"
 
   val actualityThreshold = 0.5
-  val filterableCount = 10
   val queriesPerSec = 2
 
   val clientId = "5369112"
@@ -71,7 +70,7 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
       postsComments <- resp.errorOrResp.transform(_.getMessage, _.items)
     } yield for {
       VkPostsComments(post, comments) <- postsComments
-      _ = Try(Await.result(updateIndex(post), 10.seconds))
+      _ = Try(Await.result(updateIndex(post), 20.seconds))
       comment <- comments
     } yield Subject(List(
       ID(comment.id.toString),
@@ -100,31 +99,49 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
     else Future { Right(VkSimpleResponse(1)) }
   }
 
+  override def initialize: Future[Any] = {
+    val queryCount = (cfg.siftCount / cfg.postsPerQuery).toInt
+    def _init(chunkF: Future[Any], ind: Int = 1): Future[Any] = {
+      if (ind < queryCount) {
+        Thread.sleep(estimatedQueryFrequency.toMillis)
+        _init(chunkF.flatMap(_ => pullSubjectsChunk), ind + 1)
+      }
+      else chunkF
+    }
+    _init(pullSubjectsChunk)
+  }
+
   // TODO: Make unified logging
-  def updateIndex(post: VkPost) = {
-    val pushF = searcher.pushEntity(post.id.toString, post.getFullText)
-    pushF onComplete {
+  def updateIndex(post: VkPost): Future[Any] = {
+    val articleOpt = extractArticleContent(post.getFullText)
+    val articleF = if (articleOpt.isDefined) searcher.pushEntity(post.id.toString + "_article", articleOpt.get)
+                   else Future {}
+    val postF = searcher.pushEntity(post.id.toString, post.getFullText)
+    postF onComplete {
       case Success(Left(err)) => println(s"Cannot push entity to searcher: $err")
       case Failure(ex) => println(s"Cannot push entity to searcher: ${ex.getMessage}")
       case elze => ()
     }
-    pushF
+    for {
+      a <- articleF
+      p <- postF
+    } yield true
   }
 
-  def getPostContent(post: String) = {
+  def extractArticleContent(post: String) = {
     val urlRgx = """https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)""".r
     val url = urlRgx.findFirstMatchIn(post).map(_.group(0))
-    println("url: " + url)
+    // println("url: " + url)
     if (url.isDefined) {
       def attributeValueEquals(value: String)(node: Node) = {
         node.attributes.exists(_.value.text == value)
       }
       val xml = loadXml(scala.io.Source.fromURL(url.get).mkString)
       val article = xml \\ "_" filter attributeValueEquals("article__text")
-      println("article.text: " + article.text)
-      post + " " + article.text
+      // println("article.text: " + article.text)
+      Some(article.text)
     }
-    else post
+    else None
   }
 
   def logEstim(estim: Estimation, action: String) = {

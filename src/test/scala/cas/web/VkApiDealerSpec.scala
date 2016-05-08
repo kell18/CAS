@@ -35,7 +35,7 @@ class VkApiDealerSpec extends Specification with NoTimeConversions {
     "pull subjects chunk with essential components"  in new AkkaToSpec2Scope {
       val dealer = DealersFactory.buildDealer(VkApiDealer.id, createTestingElasticS())
       dealer must beSuccessfulTry
-      val subjects = Await.result(dealer.get.pullSubjectsChunk, 10.seconds).right.get
+      val subjects = Await.result(dealer.get.pullSubjectsChunk, 20.seconds).right.get
       subjects.length must be greaterThan 0
 
       val obj = subjects.head.getComponent[Subject].right.toOption
@@ -45,12 +45,12 @@ class VkApiDealerSpec extends Specification with NoTimeConversions {
       obj.get.getComponent[ID].right.getOrElse(zeroID) mustNotEqual zeroID
     }
 
-    "push estimation without ID return Left" in new AkkaToSpec2Scope {
+    /*"push estimation without ID return Left" in new AkkaToSpec2Scope {
       val dealer = DealersFactory.buildDealer(VkApiDealer.id, createTestingElasticS())
       dealer must beSuccessfulTry
       val fake = new Estimation(Subject(List()), 0.0)
       val response = Await.result(dealer.get.pushEstimations(fake :: Nil), 10.seconds)
       response must beLeft
-    }
+    }*/
   }
 }

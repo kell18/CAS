@@ -51,6 +51,8 @@ class ContentServiceSpec extends Specification with NoTimeConversions {
           isPushed = true
           Future { Right(true) }
         }
+
+        override def initialize = Future { }
       }
 
       def waitForPushF = Future {

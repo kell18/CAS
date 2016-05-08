@@ -11,9 +11,11 @@ import akka.util.Timeout
 import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, Props}
 import cas.service.AProducer.QueryTick
 import cas.service.AServiceControl.ServiceStatus.ServiceStatus
+
+import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 object AServiceControl {
   /** Stop service if any active and init new one */
@@ -79,13 +81,17 @@ class AServiceControl extends Actor with ActorLogging {
 
   def activate(dealer: ContentDealer, estim: ActualityEstimator) = {
     val prod = Some(context.actorOf(producerProps(dealer), "Producer"))
-    val frequency = dealer.estimatedQueryFrequency
-    querySchedule = Some(context.system.scheduler.schedule(frequency, frequency, prod.get, QueryTick))
-    context.system.scheduler.maxFrequency
-    val rout = Some(context.actorOf(routerProps(prod.get), "Router"))
-    val wrkrs = for (i <- 1 to workersCount)
-      yield context.actorOf(workerProps(estim, rout.get), "Worker-"+i)
-    log.info("[AServiceControl] Service successfully started.")
-    context.become(serve(prod, rout, wrkrs.toList))
+    val tryInitDealer = Try(Await.result(dealer.initialize, 60.seconds))
+    if (tryInitDealer.isSuccess) {
+      val frequency = dealer.estimatedQueryFrequency
+      querySchedule = Some(context.system.scheduler.schedule(frequency, frequency, prod.get, QueryTick))
+      context.system.scheduler.maxFrequency
+      val rout = Some(context.actorOf(routerProps(prod.get), "Router"))
+      val wrkrs = for (i <- 1 to workersCount)
+        yield context.actorOf(workerProps(estim, rout.get), "Worker-" + i)
+      log.info("[AServiceControl] Service successfully started.")
+      context.become(serve(prod, rout, wrkrs.toList))
+    }
+    else log.error(s"Cannot activate service, dealer initialization failed: `${tryInitDealer.failed.get.getMessage}`")
   }
 }

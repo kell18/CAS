@@ -12,4 +12,5 @@ abstract class ContentDealer {
   def estimatedQueryFrequency: FiniteDuration
   def pullSubjectsChunk: Future[Either[ErrorMsg, Subjects]]
   def pushEstimations(estims: Estimations): Future[Either[ErrorMsg, Any]]
+  def initialize: Future[Any]
 }

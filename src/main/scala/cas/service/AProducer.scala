@@ -30,7 +30,7 @@ class AProducer(dealer: ContentDealer) extends Actor with ActorLogging { // TODO
 
   override def preStart = {
     super.preStart()
-    log.info("[AContentService] preStart")
+    log.info("[AProducer] preStart")
   }
 
   override def receive = serve(Nil, Nil)
