@@ -48,7 +48,7 @@ class ARouter(producer: ActorRef) extends Actor with ActorLogging {
     case PulledSubjects(chunk) => {
       /*RemoteLogger.info("PulledSubjects: `" + chunk.mkString + "`")
       RemoteLogger.info("WaitingWorkers: `" + waitingWorkers.mkString + "`")*/
-      // log.info("Subjects pooled: " + chunk)
+      // log.info("Subjects pulled: " + chunk)
       if (waitingWorkers.isEmpty) pulledSubjs.offer(PulledSubjects(chunk), 1000, TimeUnit.MILLISECONDS)
       else {
         waitingWorkers.poll(1000, TimeUnit.MILLISECONDS) ! PulledSubjects(chunk)

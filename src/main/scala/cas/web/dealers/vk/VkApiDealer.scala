@@ -71,7 +71,7 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
       postsComments <- resp.errorOrResp.transform(_.getMessage, _.items)
     } yield for {
       VkPostsComments(post, comments) <- postsComments
-      _ = updateIndex(post)
+      _ = Try(Await.result(updateIndex(post), 10.seconds))
       comment <- comments
     } yield Subject(List(
       ID(comment.id.toString),
@@ -102,11 +102,13 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
 
   // TODO: Make unified logging
   def updateIndex(post: VkPost) = {
-    searcher.pushEntity(post.id.toString, post.getFullText) onComplete {
+    val pushF = searcher.pushEntity(post.id.toString, post.getFullText)
+    pushF onComplete {
       case Success(Left(err)) => println(s"Cannot push entity to searcher: $err")
       case Failure(ex) => println(s"Cannot push entity to searcher: ${ex.getMessage}")
       case elze => ()
     }
+    pushF
   }
 
   def getPostContent(post: String) = {

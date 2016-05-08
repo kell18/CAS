@@ -59,7 +59,7 @@ class AProducer(dealer: ContentDealer) extends Actor with ActorLogging { // TODO
       }
       else consumers match {
         case Nil => Unit
-        case c::cs => dealer.pullSubjectsChunk onComplete {
+        case c::cs => Try(Await.result(dealer.pullSubjectsChunk, timeout)) match {
           case Success(Right(chunk)) =>
             c ! PulledSubjects(chunk)
             changeContext(cs, estimChunks)

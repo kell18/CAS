@@ -28,7 +28,7 @@ class AWorkerEstimator(estimator: ActualityEstimator, router: ActorRef) extends 
   final def makeEstimations(subjs: List[Subject], estims: List[Estimation] = Nil,
                             error: Option[String] = None): List[Estimation] = subjs match {
     case Nil =>
-      if (error.isDefined) log.error(error.get)
+      if (error.isDefined) log.error(s"Error while makeEstimations ${error.get}")
       estims
 
     case s::xs =>
