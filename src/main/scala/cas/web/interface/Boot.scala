@@ -41,7 +41,7 @@ object Boot extends App {
   import system.dispatcher
 
   implicit val timeout = Timeout(10.seconds)
-  // val interface = system.actorOf(Props[AInterfaceControl], "interface-control")
+  val interface = system.actorOf(Props[AInterfaceControl], "interface-control")
 
   val config =  ConfigFactory.load()
   val addr = config.getString("cas.interface")
