@@ -6,7 +6,6 @@ import spray.json._
 import Directives._
 import cas.utils._
 import cas.web.model._
-import cas.web.model.UserSettingsProtocol._
 
 object TestPage {
 
