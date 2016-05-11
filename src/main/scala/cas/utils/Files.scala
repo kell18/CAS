@@ -5,7 +5,7 @@ import java.io.File
 import scala.util.Try
 
 object Files {
-  val resources = "src/main/resources"
+  val resources = new File(".").getCanonicalPath + "/resources"
   val dealers = resources + "/cas/dealers"
   val currentDealer = dealers + "/UsingDealer.json"
 

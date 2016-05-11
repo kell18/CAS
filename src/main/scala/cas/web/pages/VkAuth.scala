@@ -8,7 +8,6 @@ import cas.web.model.UsingDealer
 import cas.web.model.UsingDealerProtocol._
 import spray.client.pipelining._
 import spray.routing.Directives._
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}

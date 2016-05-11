@@ -48,7 +48,7 @@ object ConfigurePage {
         val errOrStatusOpt = for {
           isRun <- isRunOpt
         } yield for {
-          dealer <- createDealer(searcher).asEitherString
+          dealer <- tryCreateDealer(searcher).asEitherString
           estim <- errOrEstim
           rawStatus = if (isRun) serviceControl ? Start(dealer, estim)
                       else serviceControl ? Stop
@@ -93,7 +93,7 @@ object ConfigurePage {
     }
   }
 
-  def createDealer(searcher: SearchEngine) = for {
+  def tryCreateDealer(searcher: SearchEngine) = for {
     file <- Files.readFile(Files.currentDealer)
     configs <- Try(file.parseJson.convertTo[UsingDealer])
     dealer <- DealersFactory.buildDealer(configs.id, searcher)
