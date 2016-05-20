@@ -20,6 +20,7 @@ object Utils {
     ConfigFactory.parseFile(new File(confPath + "/application.conf"))
   )
 
+  // TODO: Move to Files
   def writeToFile(path: String, s: String): Unit = {
     val pw = new java.io.PrintWriter(new File(path))
     try { pw.write(s) } catch { case ex: Throwable => println ("Ex: " + ex.getMessage) } finally pw.close()
@@ -29,6 +30,38 @@ object Utils {
     val factory = new SAXFactoryImpl()
     val loader = XML.withSAXParser(factory.newSAXParser())
     scala.xml.Utility.trim(loader.loadString(s))
+  }
+
+  def escapeJson(s: String): String = {
+    val sb = new StringBuilder(Math.round(s.length.toFloat * 1.2f))
+    var t: String = ""
+    for ( c <- s ) c match {
+      case '\\' => sb.append("\\\\");
+      case '"' =>
+        sb.append('\\')
+        sb.append(c)
+      case '/' =>
+        sb.append('\\')
+        sb.append(c);
+      case '\b' =>
+        sb.append("\\b")
+      case '\t' =>
+        sb.append("\\t")
+      case '\n' =>
+        sb.append("\\n")
+      case '\f' =>
+        sb.append("\\f")
+      case '\r' =>
+        sb.append("\\r")
+      case _ =>
+        if (c < ' ') {
+          t = "000" + Integer.toHexString(c)
+          sb.append("\\u" + t.substring(t.length() - 4))
+        } else {
+          sb.append(c)
+        }
+      }
+    sb.toString
   }
 
   def time[R](block: => R)(label: String = ""): R = {

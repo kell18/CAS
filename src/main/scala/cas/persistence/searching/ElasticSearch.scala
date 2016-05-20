@@ -17,8 +17,7 @@ import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 import cas.utils.StdImplicits.RightBiasedEither
 import cas.utils.UtilAliases.ErrorMsg
-import org.apache.commons.lang3.StringEscapeUtils
-import org.apache.commons.lang3.StringEscapeUtils.escapeJson
+import cas.utils.Utils.escapeJson
 
 object ElasticProtocol extends DefaultJsonProtocol {
   val fieldName = "doc"

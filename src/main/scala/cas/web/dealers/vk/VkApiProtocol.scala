@@ -68,7 +68,7 @@ object VkApiProtocol extends DefaultJsonProtocol {
         val count = fromField[Int](response, "count")
         val items = fromField[List[T]](response, "items")
         VkResponse[T](count, items)
-      } else deserializationError("Document not contain `responce` field.")
+      } else deserializationError("Document not contain `response` field.")
     }
   }
 
