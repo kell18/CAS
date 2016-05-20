@@ -1,7 +1,7 @@
 package cas.persistence.searching
 
 import spray.client.pipelining._
-import spray.http.{ContentType, HttpEntity, HttpRequest, Uri}
+import spray.http._
 import akka.actor.ActorSystem
 import spray.client.pipelining._
 
@@ -96,7 +96,7 @@ class ElasticSearch(val host: String = ElasticSearch.defaultHost, index: String 
     val data = s"""{ \"query\": { \"match\": { \"$fieldName\": { \"analyzer\": \"$analyzer\",
                                   \"query\": \"${escapeJson(entity)}\" } } } }""".stripMargin
     val pipeline = sendReceive ~> unmarshal[EsFallible[SearchResponse]]
-    pipeline(Get(Uri(url), data) ~> headers) map { _.errorOrResp }
+    pipeline(Get(Uri(url), data)) map { _.errorOrResp }
   }
 
   def getEntity(id: String) = {
@@ -109,14 +109,14 @@ class ElasticSearch(val host: String = ElasticSearch.defaultHost, index: String 
     val url = address + "/" + id
     // println("Entity: " + escapeJson(entity))
     val data = s"""{ "$fieldName": "${escapeJson(entity)}" }"""
-    val pipeline = sendReceive ~> unmarshal[EsFallible[ShortResponse]]
-    pipeline(Put(Uri(url), data) ~> headers) map { _.errorOrResp map {_.isCreated} }
+    val pipeline = headers ~> sendReceive ~> unmarshal[EsFallible[ShortResponse]]
+    pipeline(Put(Uri(url), data)) map { _.errorOrResp map {_.isCreated} }
   }
 
   def pushEntity(entity: => String) = {
     val data = s"""{ "$fieldName": "${escapeJson(entity)}" }"""
-    val pipeline = sendReceive ~> unmarshal[EsFallible[ShortResponse]]
-    pipeline(Post(Uri(address), data) ~> headers) map { _.errorOrResp map {_.isCreated} }
+    val pipeline = headers ~> sendReceive ~> unmarshal[EsFallible[ShortResponse]]
+    pipeline(Post(Uri(address), data)) map { _.errorOrResp map {_.isCreated} }
   }
 
   def delEntity(id: String) = {
@@ -141,8 +141,8 @@ class ElasticSearch(val host: String = ElasticSearch.defaultHost, index: String 
   }
 
   private def createIndex = {
-    val pipeline = sendReceive ~> unmarshal[EsFallible[EsAck]]
-    pipeline(Put(Uri(host + "/" + index), indexSchema) ~> headers) map {_.errorOrResp map {_.acknowledged} }
+    val pipeline = headers ~> sendReceive ~> unmarshal[EsFallible[EsAck]]
+    pipeline(Put(Uri(host + "/" + index), indexSchema)) map {_.errorOrResp map {_.acknowledged} }
   }
 
   val indexSchema =
