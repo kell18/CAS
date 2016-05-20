@@ -108,9 +108,10 @@ class ElasticSearch(val host: String = ElasticSearch.defaultHost, index: String 
   def pushEntity(id: String, entity: => String) = {
     val url = address + "/" + id
     // println("Entity: " + escapeJson(entity))
-    val data = s"""{ "$fieldName": "${escapeJson(entity)}" }"""
+    // val data = s"""{ "$fieldName": "${escapeJson(entity)}" }"""
+    val d = new JsObject(Map( fieldName -> JsString(escapeJson(entity)) ))
     val pipeline = headers ~> sendReceive ~> unmarshal[EsFallible[ShortResponse]]
-    pipeline(Put(Uri(url), data)) map { _.errorOrResp map {_.isCreated} }
+    pipeline(Put(Uri(url), d)) map { _.errorOrResp map {_.isCreated} }
   }
 
   def pushEntity(entity: => String) = {
@@ -141,7 +142,7 @@ class ElasticSearch(val host: String = ElasticSearch.defaultHost, index: String 
   }
 
   private def createIndex = {
-    val pipeline = headers ~> sendReceive ~> unmarshal[EsFallible[EsAck]]
+    val pipeline = sendReceive ~> unmarshal[EsFallible[EsAck]]
     pipeline(Put(Uri(host + "/" + index), indexSchema)) map {_.errorOrResp map {_.acknowledged} }
   }
 
