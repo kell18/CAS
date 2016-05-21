@@ -21,6 +21,7 @@ import scala.concurrent.{Await, Future}
 import cas.utils.StdImplicits.RightBiasedEither
 import cas.utils.UtilAliases.ErrorMsg
 import cas.utils.Utils.escapeJson
+import spray.httpx.SprayJsonSupport
 
 object ElasticProtocol extends DefaultJsonProtocol {
   val fieldName = "doc"
@@ -109,14 +110,19 @@ class ElasticSearch(val host: String = ElasticSearch.defaultHost, index: String 
     val url = address + "/" + id
     // println("Entity: " + escapeJson(entity))
     // val data = s"""{ "$fieldName": "${escapeJson(entity)}" }"""
+    import spray.json.{JsonFormat, DefaultJsonProtocol}
+    import spray.json.DefaultJsonProtocol._
+
+    import spray.json.DefaultJsonProtocol.RootJsObjectFormat
+    import SprayJsonSupport._
     val d = new JsObject(Map( fieldName -> JsString(escapeJson(entity)) ))
-    val pipeline = headers ~> sendReceive ~> unmarshal[EsFallible[ShortResponse]]
+    val pipeline = sendReceive ~> unmarshal[EsFallible[ShortResponse]]
     pipeline(Put(Uri(url), d)) map { _.errorOrResp map {_.isCreated} }
   }
 
   def pushEntity(entity: => String) = {
     val data = s"""{ "$fieldName": "${escapeJson(entity)}" }"""
-    val pipeline = headers ~> sendReceive ~> unmarshal[EsFallible[ShortResponse]]
+    val pipeline = sendReceive ~> unmarshal[EsFallible[ShortResponse]]
     pipeline(Post(Uri(address), data)) map { _.errorOrResp map {_.isCreated} }
   }
 
