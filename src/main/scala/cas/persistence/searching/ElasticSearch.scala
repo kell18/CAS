@@ -1,5 +1,7 @@
 package cas.persistence.searching
 
+import java.net.URLEncoder
+
 import spray.client.pipelining._
 import spray.http._
 import akka.actor.ActorSystem
@@ -113,7 +115,7 @@ class ElasticSearch(val host: String = ElasticSearch.defaultHost, index: String 
     val url = address + "/" + id
     // println("Entity: " + escapeJson(entity))
     // val data = s"""{ "$fieldName": "${escapeJson(entity)}" }"""
-    val data = new JsObject(Map( fieldName -> JsString(escapeCtrlChars(escapeJson(entity))))) // URLEncoder.encode(q, "UTF-8")
+    val data = new JsObject(Map( fieldName -> JsString(URLEncoder.encode(entity, "UTF-8")))) //
     val pipeline = sendReceive ~> unmarshal[EsFallible[ShortResponse]]
     pipeline(Put(Uri(url), data)) map { _.errorOrResp map {_.isCreated} }
   }
