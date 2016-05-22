@@ -20,7 +20,7 @@ import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 import cas.utils.StdImplicits.RightBiasedEither
 import cas.utils.UtilAliases.ErrorMsg
-import cas.utils.Utils.escapeJson
+import cas.utils.Utils.{escapeCtrlChars, escapeJson}
 import spray.httpx.SprayJsonSupport
 
 object ElasticProtocol extends DefaultJsonProtocol {
