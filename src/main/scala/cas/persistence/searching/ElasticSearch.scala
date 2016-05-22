@@ -107,17 +107,15 @@ class ElasticSearch(val host: String = ElasticSearch.defaultHost, index: String 
   }
 
   def pushEntity(id: String, entity: => String) = {
+    import spray.json.DefaultJsonProtocol._
+    import spray.json.AdditionalFormats
+
     val url = address + "/" + id
     // println("Entity: " + escapeJson(entity))
     // val data = s"""{ "$fieldName": "${escapeJson(entity)}" }"""
-    import spray.json.{JsonFormat, DefaultJsonProtocol}
-    import spray.json.DefaultJsonProtocol._
-
-    import spray.json.DefaultJsonProtocol.RootJsObjectFormat
-    import SprayJsonSupport._
-    val d = new JsObject(Map( fieldName -> JsString(escapeJson(entity)) ))
+    val data = new JsObject(Map( fieldName -> JsString(escapeJson(entity)) ))
     val pipeline = sendReceive ~> unmarshal[EsFallible[ShortResponse]]
-    pipeline(Put(Uri(url), d)) map { _.errorOrResp map {_.isCreated} }
+    pipeline(Put(Uri(url), data)) map { _.errorOrResp map {_.isCreated} }
   }
 
   def pushEntity(entity: => String) = {

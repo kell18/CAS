@@ -6,7 +6,7 @@ import org.specs2.mutable.{After, Specification}
 
 class FilesSpec extends Specification with After {
   sequential  // forces all tests to be run sequentially
-  val path = "src/test/resources/test"
+  val path = Files.resources + "/test"
 
   "Files" should {
     val c1 ="test\r\ntest"
