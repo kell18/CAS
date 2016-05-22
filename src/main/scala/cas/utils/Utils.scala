@@ -64,6 +64,8 @@ object Utils {
     sb.toString
   }
 
+  def escapeCtrlChars(str: String) = str.replaceAll("[\\x00-\\x09\\x11\\x12\\x14-\\x1F\\x7F]", "")
+
   def time[R](block: => R)(label: String = ""): R = {
     val t0 = System.nanoTime()
     val result = block
