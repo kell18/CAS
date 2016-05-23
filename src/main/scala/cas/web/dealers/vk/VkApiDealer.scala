@@ -113,18 +113,19 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
 
   // TODO: Make unified logging
   def updateIndex(post: VkPost): Future[Any] = {
-    val articleOpt = extractArticleContent(post.getFullText)
-    val articleF = if (articleOpt.isDefined) searcher.pushEntity(post.id.toString + "_article", articleOpt.get)
-                   else Future {}
-    val postF = searcher.pushEntity(post.id.toString, post.getFullText)
-    postF onComplete {
-      case Success(Left(err)) => println(s"Cannot push entity to searcher: $err")
-      case Failure(ex) => println(s"Cannot push entity to searcher: ${ex.getMessage}")
+    println(s"Post: `${post.getFullText}`")
+    val logPostPushing: PartialFunction[Try[Either[ErrorMsg, Any]], Unit] = {
+      case Success(Left(err)) => println(s"Cannot push entity to searcher (Left): `$err`")
+      case Failure(ex) => println(s"Cannot push entity to searcher (Failure): `${ex.getMessage}`")
       case elze => ()
     }
+    val pushPostF = searcher.pushEntity(post.id.toString, post.getFullText)
     for {
-      a <- articleF
-      p <- postF
+      postErrOrAny <- pushPostF
+      _ = pushPostF onComplete logPostPushing
+      tryArticleOpt = Try(extractArticleContent(post.getFullText))
+      if tryArticleOpt.isSuccess && tryArticleOpt.get.isDefined
+      articleErrOrAny <- searcher.pushEntity(post.id.toString + "_article", tryArticleOpt.get.get)
     } yield true
   }
 

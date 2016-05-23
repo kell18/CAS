@@ -36,15 +36,15 @@ object Utils {
     val sb = new StringBuilder(Math.round(s.length.toFloat * 1.2f))
     var t: String = ""
     for ( c <- s ) c match {
-      case '\\' => sb.append("\\\\");
+      case '\\' => sb.append("""\\""");
       case '"' =>
         sb.append('\\')
         sb.append(c)
       case '/' =>
-        sb.append('\\')
+        sb.append("""\""")
         sb.append(c);
       case '\b' =>
-        sb.append("\\b")
+        sb.append("""\b""")
       case '\t' =>
         sb.append("\\t")
       case '\n' =>
@@ -63,8 +63,6 @@ object Utils {
       }
     sb.toString
   }
-
-  def escapeCtrlChars(str: String) = str.replaceAll("[\\x00-\\x09\\x11\\x12\\x14-\\x1F\\x7F]", "")
 
   def time[R](block: => R)(label: String = ""): R = {
     val t0 = System.nanoTime()
