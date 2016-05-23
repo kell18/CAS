@@ -115,7 +115,7 @@ class ElasticSearch(val host: String = ElasticSearch.defaultHost, index: String 
     val url = address + "/" + id
     // println("Entity: " + escapeJson(entity))
     // val data = s"""{ "$fieldName": "${escapeJson(entity)}" }"""
-    val data = new JsObject(Map( fieldName -> JsString(URLEncoder.encode(entity, "UTF-8")))) //
+    val data = new JsObject(Map( fieldName -> JsString(escapeJson(entity)))) //
     val pipeline = sendReceive ~> unmarshal[EsFallible[ShortResponse]]
     pipeline(Put(Uri(url), data)) map { _.errorOrResp map {_.isCreated} }
   }
@@ -152,7 +152,7 @@ class ElasticSearch(val host: String = ElasticSearch.defaultHost, index: String 
     pipeline(Put(Uri(host + "/" + index), indexSchema)) map {_.errorOrResp map {_.acknowledged} }
   }
 
-  val indexSchema =
+  val indexSchema = // TODO: Test "number_of_shards": 1,
     s"""{
        "settings": {
          "analysis": {
