@@ -1,3 +1,3 @@
 #!/bin/bash
 
-sbt run cas.web.interface.Boot
+env JAVA_TOOL_OPTIONS='-Dfile.encoding=UTF8' sbt run cas.web.interface.Boot
