@@ -149,11 +149,11 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
 
   def logEstim(estim: Estimation, action: String) = {
     println("[" + new DateTime().getHourOfDay + ":" + new DateTime().getMinuteOfHour + "] " + action +
-      " with Actuality: " + estim.actuality + " " +
-      " with likes cnt: " + estim.subj.getComponent[Likability].get.value +
-      " with time elapsed: " + new Period(estim.subj.getComponent[CreationDate].get.value,
-          DateTime.now()).toStandardSeconds.getSeconds + "sec"+
-      " Text: " + estim.subj.getComponent[Description].get.text)
+      " likes cnt: `" + estim.subj.getComponent[Likability].get.value + "`" +
+      " text: `" + estim.subj.getComponent[Description].get.text + "`" +
+      " time elapsed: `" + new Period(estim.subj.getComponent[CreationDate].get.value,
+          DateTime.now()).toStandardSeconds.getSeconds + " sec`"+
+      " actuality: `" + estim.actuality + "` ")
   }
 
   def commentsQuery(startPostInd: Long, postsCount: Int) =
