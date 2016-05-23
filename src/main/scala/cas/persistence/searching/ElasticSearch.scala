@@ -115,7 +115,7 @@ class ElasticSearch(val host: String = ElasticSearch.defaultHost, index: String 
     val url = address + "/" + id
     // println("Entity: " + escapeJson(entity))
     // val data = s"""{ "$fieldName": "${escapeJson(entity)}" }"""
-    val data = new JsObject(Map( fieldName -> JsString(entity))) // TODO: Pass json with implicit marshaller
+    val data = new JsObject(Map( fieldName -> JsString(escapeJson(entity)))) // TODO: Pass json with implicit marshaller
     val pipeline = sendReceive ~> unmarshal[EsFallible[ShortResponse]]
     pipeline(Put(Uri(url), data)) map { _.errorOrResp map {_.isCreated} }
   }
