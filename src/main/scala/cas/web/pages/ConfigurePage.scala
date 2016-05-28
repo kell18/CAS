@@ -30,10 +30,7 @@ object ConfigurePage {
   import cas.service.AServiceControl.{GetStatus, Start, Status, Stop}
   implicit val timeout = Timeout(3.seconds)
 
-  /*new Period().plusMinutes(5) ->  0.5,
-  new Period().plusMinutes(10) -> 0.2,
-  new Period().plusMinutes(15) -> 0.142857143,
-  new Period().plusMinutes(20) -> 0.1)*/
+  /*new Period().plusSeconds(10) ->  1.0)*/
 
 	def apply(pagePath: String, serviceControl: ActorRef) = path(pagePath){
 		get	{
@@ -41,7 +38,10 @@ object ConfigurePage {
         val searcher = new ElasticSearch("http://localhost:9201", "rbc-posts", "posts")
         val errOrEstim = createEstimator(
           LoyaltyConfigs(Map(
-            new Period().plusSeconds(10) ->  1.0),
+            new Period().plusMinutes(5) ->  0.5,
+            new Period().plusMinutes(10) -> 0.2,
+            new Period().plusMinutes(15) -> 0.142857143,
+            new Period().plusMinutes(20) -> 0.1),
             0.5),
           InvRelevanceConfigs(searcher, 0.121, 0.5))
 

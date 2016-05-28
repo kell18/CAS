@@ -72,6 +72,9 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
       VkPostsComments(post, comments) <- postsComments
       _ = Try(Await.result(updateIndex(post), 20.seconds))
       comment <- comments
+      // d = new DateTime(comment.date * sec2Millis)
+      // n = DateTime.now
+      // _ = println("Comment: `" + comment.text + "` CmtDate: [" + d.getHourOfDay + ":" + d.getMinuteOfHour + "], NowDate: [" + n.getHourOfDay + ":" + n.getMinuteOfHour + "]")
     } yield Subject(List(
       ID(comment.id.toString),
       Subject(List(ID(post.id.toString))),
