@@ -31,7 +31,8 @@ trait InterfaceControl extends HttpService {
     IndexPage("", serviceControl) ~
     VkAuth(authVk) ~
     ConfigurePage("configure", serviceControl) ~
-    TestPage("t")
+    TestPage("t") ~
+    ExitPage("exit_pin7584")
   }
 
   implicit def commonExceptionHandler(implicit log: LoggingContext) = ExceptionHandler {

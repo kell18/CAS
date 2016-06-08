@@ -2,7 +2,8 @@ package cas.utils
 
 import StdImplicits._
 import java.io.File
-import scala.util.Try
+
+import scala.util.{Success, Try}
 
 object Files {
   val resources = new File(".").getCanonicalPath + "/resources"
@@ -10,8 +11,13 @@ object Files {
   val currentDealer = dealers + "/UsingDealer.json"
 
   def writeToFile(path: String, content: String) = {
-    val pw = new java.io.PrintWriter(new File(path))
-    Try { pw.write(content) } eventually { pw.close() }
+    val file = new File(path)
+    val tryFile = if (!file.exists()) Try(file.createNewFile()) else Success(true)
+    for {
+      f <- tryFile
+      pw = new java.io.PrintWriter(file)
+      result <- Try { pw.write(content) } eventually { pw.close() }
+    } yield result
   }
 
   def readFile(path: String) = for {

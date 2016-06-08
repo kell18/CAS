@@ -31,11 +31,11 @@ object ConfigurePage {
   implicit val timeout = Timeout(3.seconds)
 
   /*new Period().plusSeconds(10) ->  1.0)*/
+  val searcher = new ElasticSearch("http://localhost:9201", "rbc-posts", "posts")
 
 	def apply(pagePath: String, serviceControl: ActorRef) = path(pagePath){
 		get	{
 			parameter("isRun".as[Boolean].?) { (isRunOpt) =>
-        val searcher = new ElasticSearch("http://localhost:9201", "rbc-posts", "posts")
         val errOrEstim = createEstimator(
           LoyaltyConfigs(Map(
             new Period().plusMinutes(5) ->  0.5,

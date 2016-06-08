@@ -1,23 +1,19 @@
 package cas.persistence.searching
 
 import java.net.URLEncoder
-
 import spray.client.pipelining._
 import spray.http._
 import akka.actor.ActorSystem
 import spray.client.pipelining._
-
 import scala.concurrent.ExecutionContext.Implicits.global
 import spray.http.MediaTypes.`application/json`
 import spray.httpx.unmarshalling.Unmarshaller
 import spray.json._
-
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 import spray.httpx.unmarshalling.Deserialized
-
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 import cas.utils.StdImplicits.RightBiasedEither
@@ -84,7 +80,7 @@ object ElasticSearch {
 }
 
 class ElasticSearch(val host: String = ElasticSearch.defaultHost, index: String = "cas-ind",
-                    mtype: String = "docs", ttl: Duration = Duration("48 hours"))
+                    mtype: String = "docs", ttl: Duration = Duration("2 hours"))
                    (implicit val system: ActorSystem) extends SearchEngine {
   import ElasticProtocol._
   import spray.httpx.SprayJsonSupport._

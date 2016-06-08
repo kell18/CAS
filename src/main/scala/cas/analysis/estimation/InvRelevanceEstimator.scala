@@ -20,7 +20,6 @@ case class InvRelevanceConfigs(
     searcher: SearchEngine, threshold: Double, override val weight: Double = 1.0
   ) extends EstimatorConfigs(weight)
 
-/** Computes relevance of subject by scoring it relative to @ind / @spape index in elasticsearch */
 class InvRelevanceEstimator(cfg: InvRelevanceConfigs) extends ActualityEstimator(cfg) {
 
   override def estimateActuality(subj: Subject): Either[String, Double] = for {

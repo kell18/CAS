@@ -1,15 +1,16 @@
 package cas.service
 
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
-
 import akka.actor.{Actor, ActorLogging, ActorRef}
+import akka.event.Logging
 import akka.pattern.pipe
+import cas.persistence.SubjectsGrader
 import cas.analysis.subject.Subject
+import cas.persistence.SubjectsGrader
 import cas.persistence.searching.ElasticSearch
 import cas.utils.RemoteLogger
 import cas.utils.UtilAliases._
 import cas.web.dealers.vk.VkApiProtocol.VkPost
-
 import scala.collection.mutable
 import scala.collection.mutable.Queue
 
@@ -26,6 +27,8 @@ class ARouter(producer: ActorRef) extends Actor with ActorLogging {
 
   val pulledSubjs = new LinkedBlockingQueue[PulledSubjects]()
   val waitingWorkers = new LinkedBlockingQueue[ActorRef]()
+
+  val grader: SubjectsGrader = new SubjectsGrader(500)(Logging.getLogger(context.system, "SubjectsGrader"))
 
   override def preStart = {
     super.preStart()
@@ -49,6 +52,7 @@ class ARouter(producer: ActorRef) extends Actor with ActorLogging {
       /*RemoteLogger.info("PulledSubjects: `" + chunk.mkString + "`")
       RemoteLogger.info("WaitingWorkers: `" + waitingWorkers.mkString + "`")*/
       // log.info("Subjects pulled: " + chunk)
+      chunk.foreach(grader.commitSubject)
       if (waitingWorkers.isEmpty) pulledSubjs.offer(PulledSubjects(chunk), 1000, TimeUnit.MILLISECONDS)
       else {
         waitingWorkers.poll(1000, TimeUnit.MILLISECONDS) ! PulledSubjects(chunk)
@@ -61,5 +65,10 @@ class ARouter(producer: ActorRef) extends Actor with ActorLogging {
       // log.info("Estimations computed: " + estims.estims)
       producer forward estims
     }
+  }
+
+  override def postStop() = {
+    super.postStop()
+    grader.pushToFile
   }
 }

@@ -27,12 +27,34 @@ import cas.utils.UtilAliases.ErrorMsg
 
 import scala.concurrent.duration._
 import scala.xml.{Node, XML}
-import cats.data.Validated.{invalid, valid}
+/*import cats.data.Validated.{invalid, valid}
 import cats.std.all._
-import cats.syntax.cartesian._
+import cats.syntax.cartesian._*/
+import com.textocat.textokit.commons.cpe.FileDirectoryCollectionReader
+import com.textocat.textokit.commons.util.PipelineDescriptorUtils
+import com.textocat.textokit.morph.dictionary.MorphDictionaryAPIFactory
+import com.textocat.textokit.morph.lemmatizer.LemmatizerAPI
+import com.textocat.textokit.postagger.{MorphCasUtils, PosTaggerAPI}
+import com.textocat.textokit.segmentation.SentenceSplitterAPI
+import com.textocat.textokit.tokenizer.TokenizerAPI
+import org.apache.uima.UIMAException
+import org.apache.uima.analysis_engine.AnalysisEngineDescription
+import org.apache.uima.collection.CollectionReaderDescription
+import org.apache.uima.fit.pipeline.SimplePipeline
+import org.apache.uima.resource.ExternalResourceDescription
+import java.io.File
+import java.io.IOException
+
+import com.textocat.textokit.morph.fs.Word
+import org.apache.uima.fit.component.JCasAnnotator_ImplBase
+import org.apache.uima.fit.factory.AnalysisEngineFactory.createEngineDescription
+import org.apache.uima.fit.factory.AnalysisEngineFactory._
+import org.apache.uima.fit.util.JCasUtil
+import org.apache.uima.jcas.JCas
 
 object ImplicitRuntime {
   implicit val system = ActorSystem("web-service")
+  val timeout = 10.seconds
 }
 
 import spray.client.pipelining._
@@ -57,4 +79,41 @@ object Boot extends App {
 
   println(a)*/
 
+  /*val inputDir = new File("C:\\Users\\Albert\\Code\\Scala\\Utils")
+
+  val readerDesc = FileDirectoryCollectionReader.createDescription(inputDir)
+
+  val aeDesc = createEngineDescription(
+    createEngineDescription(TokenizerAPI.AE_TOKENIZER),
+    createEngineDescription(SentenceSplitterAPI.AE_SENTENCE_SPLITTER),
+    createEngineDescription(PosTaggerAPI.AE_POSTAGGER),
+    createEngineDescription(LemmatizerAPI.AE_LEMMATIZER)
+  );
+  val morphDictDesc =
+    MorphDictionaryAPIFactory.getMorphDictionaryAPI().getResourceDescriptionForCachedInstance()
+  morphDictDesc.setName(PosTaggerAPI.MORPH_DICTIONARY_RESOURCE_NAME)
+  PipelineDescriptorUtils.getResourceManagerConfiguration(aeDesc)
+    .addExternalResource(morphDictDesc)
+
+  val writerDesc = createEngineDescription(WordPosLemmaWriter.getClass)
+
+  SimplePipeline.runPipeline(readerDesc, aeDesc, writerDesc)*/
+
 }
+
+/*object W1 extends Word {}
+
+object WordPosLemmaWriter extends JCasAnnotator_ImplBase {
+  import scala.collection.JavaConversions._
+
+  def process(jCas: JCas) {
+    for(w <- JCasUtil.select(jCas, W1.getClass)) {
+      val src: String = w.getCoveredText()
+      val lemma: String = MorphCasUtils.getFirstLemma(w)
+      val posTag: String = MorphCasUtils.getFirstPosTag(w)
+      System.out.print(String.format("%s/%s/%s ", src, lemma, posTag))
+    }
+    // mark the end of a document
+    System.out.println("\n")
+  }
+}*/

@@ -5,7 +5,6 @@ import cas.analysis.estimation._
 import cas.analysis.subject.components.Description
 import cas.utils.UtilAliases._
 import cas.utils.StdImplicits.RightBiasedEither
-
 import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.util.control.NonFatal
@@ -74,7 +73,7 @@ class AProducer(dealer: ContentDealer) extends Actor with ActorLogging { // TODO
   }
 
   def changeContext(consumers: List[ActorRef], estims: List[Estimations]) = {
-    if (estims.flatten.length > 25) {
+    if (estims.flatten.length > 50) {
       log.warning("estims length: " + estims.flatten.length)
     }
     context.become(serve(consumers, estims))

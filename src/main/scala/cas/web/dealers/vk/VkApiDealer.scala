@@ -1,7 +1,7 @@
 package cas.web.dealers.vk
 
 import java.net.URLEncoder
-
+import akka.event.Logging
 import akka.actor.ActorSystem
 import cas.analysis.subject.Subject
 import cas.analysis.subject.components._
@@ -31,13 +31,12 @@ import java.util.concurrent.{BlockingQueue, LinkedBlockingQueue}
 
 object VkApiDealer {
   import VkApiProtocol._
-
   val id = "VkApi.json"
   val apiUrl = "https://api.vk.com/method/"
   val apiVersion = "5.50"
 
   val actualityThreshold = 0.5
-  val queriesPerSec = 2
+  val queriesPerSec = 1
 
   val clientId = "5369112"
   val clientSecret = "fFZQIwuIPR5bXxRW0c0I"
@@ -70,22 +69,23 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
       postsComments <- resp.errorOrResp.transform(_.getMessage, _.items)
     } yield for {
       VkPostsComments(post, comments) <- postsComments
-      _ = Try(Await.result(updateIndex(post), 20.seconds))
+      articleBody = Try(Await.result(updateIndex(post), 20.seconds)).getOrElse("")
       comment <- comments
       // d = new DateTime(comment.date * sec2Millis)
       // n = DateTime.now
-      // _ = println("Comment: `" + comment.text + "` CmtDate: [" + d.getHourOfDay + ":" + d.getMinuteOfHour + "], NowDate: [" + n.getHourOfDay + ":" + n.getMinuteOfHour + "]")
+      // _ = println("Comment: `" + comment.text + "` CmtDate: [" + d.getHourOfDay + ":" + d.getMinuteOfHour +
+      // "], NowDate: [" + n.getHourOfDay + ":" + n.getMinuteOfHour + "]")
     } yield Subject(List(
       ID(comment.id.toString),
-      Subject(List(ID(post.id.toString))),
       Likability(comment.likes.count.toDouble),
       CreationDate(new DateTime(comment.date * sec2Millis)),
-      Description(comment.text)
+      Description(comment.text),
+      Article(post.id.toString, post.getFullText, articleBody)
     ))
   }
 
   override def pushEstimations(estims: Estimations): Future[Either[ErrorMsg, Any]] = {
-    val pipeline = sendReceive ~> unmarshal[VkFallible[VkSimpleResponse]]
+    /*val pipeline = sendReceive ~> unmarshal[VkFallible[VkSimpleResponse]]
     val scriptLines = (for {
       estim <- estims
       if estim.actuality < actualityThreshold
@@ -99,7 +99,7 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
     } yield for {
       vkResp <- resp.errorOrResp.left.map(_.getMessage)
     } yield vkResp
-    else Future { Right(VkSimpleResponse(1)) }
+    else*/ Future { Right(VkSimpleResponse(1)) }
   }
 
   override def initialize: Future[Any] = {
@@ -115,7 +115,7 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
   }
 
   // TODO: Make unified logging
-  def updateIndex(post: VkPost): Future[Any] = {
+  def updateIndex(post: VkPost) = {
     // println(s"Post: `${post.getFullText}`")
     val logPushing: PartialFunction[Try[Either[ErrorMsg, Any]], Unit] = {
       case Success(Left(err)) => println(s"Cannot push entity to searcher (Left): `$err`")
@@ -128,10 +128,11 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
       _ = pushPostF onComplete logPushing
       tryArticleOpt = Try(extractArticleContent(post.getFullText))
       if tryArticleOpt.isSuccess && tryArticleOpt.get.isDefined
-      pushArticleF = searcher.pushEntity(post.id.toString + "_article", tryArticleOpt.get.get)
+      article = tryArticleOpt.get.get
+      pushArticleF = searcher.pushEntity(post.id.toString + "_article", article)
       articleErrOrAny <- pushArticleF
       _ = pushArticleF onComplete logPushing
-    } yield true
+    } yield article
   }
 
   def extractArticleContent(post: String) = {
