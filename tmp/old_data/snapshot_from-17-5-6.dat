@@ -1,0 +1,14 @@
+{
+  "context": {
+    "post1": "Some post descr"
+  },
+  "data": {
+    "cmt1": {
+      "hourOfDay": 17,
+      "text": "#$%^&*as;lfd \\\\t\\\\t \\\\r\\\\n\\\\n\\\\r<<\\/ ** Fancy comment\\\\n",
+      "isActual": 1,
+      "likes": 10,
+      "relevance": 0.10020784
+    }
+  }
+}

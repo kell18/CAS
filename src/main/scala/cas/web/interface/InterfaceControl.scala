@@ -3,6 +3,7 @@ package cas.web.interface
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import cas.analysis.estimation.{LoyaltyConfigs, LoyaltyEstimator, TotalEstimator}
 import cas.service.{AProducer, AServiceControl, ContentDealer}
+import cas.utils.Files
 import cas.web.dealers.DealersFactory
 import cas.web.model.UsingDealer
 import spray.routing._
@@ -11,7 +12,6 @@ import spray.http.MediaTypes._
 import spray.util.LoggingContext
 import spray.http.StatusCodes._
 import cas.web.pages._
-
 import scala.util.{Failure, Success}
 import scala.util.control.NonFatal
 
@@ -32,7 +32,11 @@ trait InterfaceControl extends HttpService {
     VkAuth(authVk) ~
     ConfigurePage("configure", serviceControl) ~
     TestPage("t") ~
-    ExitPage("exit_pin7584")
+    ExitPage("exit_pin7584") ~
+    path("static"/ """.+""".r) { relPath => // TODO: Match only path
+      println(Files.static + "/" + relPath)
+      getFromFile(Files.static + "/" + relPath)
+    }
   }
 
   implicit def commonExceptionHandler(implicit log: LoggingContext) = ExceptionHandler {

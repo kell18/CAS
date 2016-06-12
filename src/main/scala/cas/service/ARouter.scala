@@ -7,6 +7,7 @@ import akka.pattern.pipe
 import cas.persistence.SubjectsGrader
 import cas.analysis.subject.Subject
 import cas.persistence.SubjectsGrader
+import cas.persistence.SubjectsGraderProtocol.Snapshot
 import cas.persistence.searching.ElasticSearch
 import cas.utils.RemoteLogger
 import cas.utils.UtilAliases._
@@ -28,7 +29,7 @@ class ARouter(producer: ActorRef) extends Actor with ActorLogging {
   val pulledSubjs = new LinkedBlockingQueue[PulledSubjects]()
   val waitingWorkers = new LinkedBlockingQueue[ActorRef]()
 
-  val grader: SubjectsGrader = new SubjectsGrader(500)(Logging.getLogger(context.system, "SubjectsGrader"))
+  val grader: SubjectsGrader = new SubjectsGrader(500)
 
   override def preStart = {
     super.preStart()
@@ -69,6 +70,6 @@ class ARouter(producer: ActorRef) extends Actor with ActorLogging {
 
   override def postStop() = {
     super.postStop()
-    grader.pushToFile
+    grader.pushToFile(Snapshot(grader.data.values.toList))
   }
 }

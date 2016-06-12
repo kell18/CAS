@@ -91,11 +91,17 @@ class ElasticSearch(val host: String = ElasticSearch.defaultHost, index: String 
   val headers = addHeader("Content-type", "application/json")
 
   def queryEntityScore(entity: => String) = {
-    val url = address + "/_search"
-    val data = s"""{ \"query\": { \"match\": { \"$fieldName\": { \"analyzer\": \"$analyzer\",
+    if (entity.length > 10000) Future { Right(SearchResponse(Some(0.0), 0)) }
+    else {
+      val url = address + "/_search"
+      val data =
+        s"""{ \"query\": { \"match\": { \"$fieldName\": { \"analyzer\": \"$analyzer\",
                                   \"query\": \"${escapeJson(entity)}\" } } } }""".stripMargin
-    val pipeline = sendReceive ~> unmarshal[EsFallible[SearchResponse]]
-    pipeline(Get(Uri(url), data)) map { _.errorOrResp }
+      val pipeline = sendReceive ~> unmarshal[EsFallible[SearchResponse]]
+      pipeline(Get(Uri(url), data)) map {
+        _.errorOrResp
+      }
+    }
   }
 
   def getEntity(id: String) = {

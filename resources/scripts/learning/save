@@ -1,0 +1,1091 @@
+>> diary on
+>> mX = linspace(0, 1.8, 30);
+>> mY = linspace(0, 1.0, 30);
+>> [XX, YY] = meshgrid(mX, mY);
+>> costFn = @(th) costFunction(th, X, y)
+costFn =
+
+@(th) costFunction (th, X, y)
+
+>> th = fminunc(costFn, [-12, 56, 1, 0.4])
+error: costFunction: operator *: nonconformant arguments (op1 is 500x4, op2 is 1x4)
+error: called from
+    costFunction at line 24 column 4
+    fminunc at line 162 column 8
+error: evaluating argument list element number 1
+error: called from
+    costFunction at line 24 column 4
+    fminunc at line 162 column 8
+>> th = fminunc(costFn, [-12; 56; 1; 0.4])
+th =
+
+  -12.00000
+   56.00000
+    1.00000
+    0.40000
+
+>> th = fminunc(costFn)
+error: Invalid call to fminunc.  Correct usage is:
+
+ -- Function File:  fminunc (FCN, X0)
+ -- Function File:  fminunc (FCN, X0, OPTIONS)
+ -- Function File: [X, FVAL, INFO, OUTPUT, GRAD, HESS] = fminunc (FCN,
+          ...)
+
+
+
+Additional help for built-in functions and operators is
+available in the online version of the manual.  Use the command
+'doc <topic>' to search the manual index.
+
+Help and information about Octave is also available on the WWW
+at http://www.octave.org and via the help@octave.org
+mailing list.
+>> th = fminunc(costFn, [2.2; -0.02; 1; 1])
+th =
+
+    3.30598
+   -0.42582
+  -15.66284
+   -1.99473
+
+>> ZZ = th(1)/th(2) .+ th(3)/th(2) .* XX .+ th(4)/th(2) .* YY;  
+>> [P, N] = divideByClass(X, y);
+>> % plot3(P(:, 1), P(:, 2), P(:, 3), 'x', N(:, 1), N(:, 2), N(:, 3), 'o', XX, YY, ZZ);
+>> diary on
+>> history
+    1 a = eye(5)
+    2 units(1)
+    3 A = [6 5;
+    4 4 3;
+    5 2 1]
+    6 size(A)
+    7 size(A)[1]
+    8 length(A)
+    9 size(A)
+   10 size(A) 1
+   11 size(A)
+   12 pwd
+   13 help load
+   14 ls
+   15 exit
+   16 # Octave 4.0.1, Sun May 29 19:33:07 2016 RTZ 2 (зима) <unknown@Рустам-ПК>
+   17 HelloWorld
+   18 HelloWorld
+   19 HelloWorld
+   20 HelloWorld
+   21 HelloWorld
+   22 v = [0:0.5:33]
+   23 x = v;
+   24 y1 = exp(x/5)
+   25 x(3)
+   26 x(5)
+   27 y(5)
+   28 y1(5)
+   29 exp(2)
+   30 length(x)
+   31 length(y1)
+   32 y1(1)
+   33 y1(2)
+   34 y1(3)
+   35 x(3)
+   36 plot(x, y1);
+   37 y(1:3)
+   38 y1(1:3)
+   39 plot(x, y1(1:10));
+   40 warmUpExercise()
+   41 submit()
+   42 submit()
+   43 cd ..
+   44 cd `..`;
+   45 exit
+   46 # Octave 4.0.1, Sun May 29 22:04:41 2016 RTZ 2 (зима) <unknown@Рустам-ПК>
+   47 ls
+   48 cd ex1
+   49 warmUpExercise()
+   50 submit()
+   51 help legend
+   52 x
+   53 x = [1:3:99]
+   54 length x
+   55 length (x)
+   56 y1 = sin(pi / 2 * x)
+   57 y1 = sin(3 + pi / 2 * x)
+   58 plotData(x, y1);
+   59 plotData(x, y1);
+   60 submit()
+   61 x = [1:1:3]
+   62 y = x
+   63 X = ones(3, 2)
+   64 X(:, 2)
+   65 X(:, 2) = [1 2 3]
+   66 y = [1, 2, 3]
+   67 y = y'
+   68 y = [1 2 3]
+   69 theta = [0 1]
+   70 computeCost(X, y', theta') 
+   71 theta = [0 0]
+   72 computeCost(X, y', theta') 
+   73 submit()
+   74 a = 5
+   75 b = a
+   76 a = 6
+   77 b
+   78 a = eye(3)
+   79 b = a
+   80 b(1, 1) = 100
+   81 a
+   82 a - b
+   83 ans
+   84 ans(1,1)
+   85 ans(1,2) = 3
+   86 ans
+   87 a
+   88 a(1, 2) = 3
+   89 X
+   90 y
+   91 y1
+   92 h
+   93 h = y - 0.1
+   94 gradientDescent(X, y, [0 1.5], 0.01, 100)
+   95 gradientDescent(X, y, [0; 1.5], 0.01, 100)
+   96 gradientDescent(X, y, [0; 1.5], 0.01, 100)
+   97 gradientDescent(X, y, [0; 1.5], 0.01, 100)
+   98 gradientDescent(X, y, [0; 1.5], 0.01, 100)
+   99 gradientDescent(X, y, [0; 1.5], 0.01, 100)
+  100 gradientDescent(X, y, [0; 1.5], 0.01, 100)
+  101 sum(ans)
+  102 a
+  103 y
+  104 sum(y)
+  105 gradientDescent(X, y, [0; 1.5], 0.01, 100)
+  106 gradientDescent(X, y, [0; 1.5], 0.01, 100)
+  107 gradientDescent(X, y, [0; 1.5], 0.01, 100)
+  108 gradientDescent(X, y, [0; 1.5], 0.01, 100)
+  109 gradientDescent(X, y, [0; 1.5], 0.01, 100)
+  110 gradientDescent(X, y', [0; 1.5], 0.01, 100)
+  111 [th, J_hs] = gradientDescent(X, y', [0; 1.5], 0.01, 100);
+  112 [th, J_hs] = gradientDescent(X, y', [0; 1.5], 0.01, 100);
+  113 th
+  114 theta = [0; 1.5]
+  115 computeCost(X, y, theta)
+  116 [th, J_hs] = gradientDescent(X, y', theta, 0.01, 100);
+  117 th
+  118 computeCost(X, y, theta)
+  119 computeCost(X, y', theta)
+  120 computeCost(X, y', th)
+  121 [th, J_hs] = gradientDescent(X, y', theta, 0.01, 500);
+  122 computeCost(X, y', th)
+  123 for i = 1:100
+  124 plotData(J_hs, 1:500);
+  125 [th, J_hs] = gradientDescent(X, y', theta, 50.1, 500);
+  126 plotData(J_hs, 1:500);
+  127 [th, J_hs] = gradientDescent(X, y', theta, 1.1, 500);
+  128 plotData(J_hs, 1:500);
+  129 help gnuplot_binary
+  130 [th, J_hs] = gradientDescent(X, y', theta, 0.1, 500);
+  131 plotData(J_hs, 1:500);
+  132 [th, J_hs] = gradientDescent(X, y', theta, 0.3, 500);
+  133 plotData(J_hs, 1:500);
+  134 [th, J_hs] = gradientDescent(X, y', theta, 0.0003, 500);
+  135 [th, J_hs] = gradientDescent(X, y', theta, 2.3, 500);
+  136 plotData(J_hs, 1:500);
+  137 plotData(J_hs, 1:500);
+  138 [th, J_hs] = gradientDescent(X, y', theta, 2.3, 50);
+  139 plotData(J_hs, 1:50);
+  140 graphics_toolkit('gnuplot')
+  141 gnuplot(J_hs, 1:50)
+  142 gnuplot_binary(J_hs, 1:50)
+  143 submit()
+  144 history
+  145 history 20
+  146 history_ex1 = history;
+  147 history_ex1
+  148 help save 
+  149 save("ex1_hist.txt", history_ex1)
+  150 save("ex1_hist.txt", cell2str(history_ex1))
+  151 hst = history_ex1 + ' end';
+  152 hst = mat2str(history_ex1)
+  153 hst = mat2str(history_ex1, 3)
+  154 hst = mat2str(history_ex1, 3, "cell")
+  155 diary on
+  156 history_ex1
+  157 diary off
+  158 diary
+  159 diary on
+  160 'Hello'
+  161 diary off
+  162 exit
+  163 exit
+  164 # Octave 4.0.1, Mon May 30 02:08:17 2016 RTZ 2 (зима) <unknown@Рустам-ПК>
+  165 A = [1 2; 3 4; 5 6];
+  166 B = [1 2 3; 4 5 6];
+  167 C = B + A
+  168 C = A' + B
+  169 C = B' + A
+  170 C = A' * B
+  171 C = A * B
+  172 A(:, 0:1)
+  173 A
+  174 A(:)
+  175 A(:, 1)
+  176 A(1:3, 1)
+  177 for i = 1:7
+  178   for j = 1:7
+  179     A(i, j) = log(X(i, j));
+  180     B(i, j) = X(i, j) ^ 2;
+  181     C(i, j) = X(i, j) + 1;
+  182     D(i, j) = X(i, j) / 4;
+  183   end
+  184 end
+  185 X = magic(7)
+  186 for i = 1:7
+  187   for j = 1:7
+  188     A(i, j) = log(X(i, j));
+  189     B(i, j) = X(i, j) ^ 2;
+  190     C(i, j) = X(i, j) + 1;
+  191     D(i, j) = X(i, j) / 4;
+  192   end
+  193 end
+  194 C == X + 1
+  195 C
+  196 X + 1
+  197 X
+  198 D
+  199 X / 4
+  200 B
+  201 X ^ 2
+  202 X .^ 2
+  203 B
+  204 X ^ 2
+  205 X
+  206 v = rand(7)
+  207 v = v(:, 1)
+  208 X * v
+  209 X v
+  210 v' * X
+  211 X * v
+  212 sun(X * v)
+  213 sum(X * v)
+  214 v1 = rand(7)(:, 2)
+  215 v
+  216 v * v1
+  217 v * v1'
+  218 v' * v1
+  219 v
+  220 v' * v1
+  221 sum(v * v1)
+  222 v' * v1
+  223 v * v1'
+  224 exit
+  225 # Octave 4.0.1, Mon May 30 02:56:08 2016 RTZ 2 (зима) <unknown@Рустам-ПК>
+  226 cd C:\Users\Albert\Code\Matlab\Standford-ML\machine-learning-ex2\ex2
+  227 ls
+  228 X = [3 2; 1 2; 6 7]
+  229 plotData(X, sin(X))
+  230 x = -10:0.1:10;
+  231 plotData(x, sin (x));
+  232 x = -10:0.7:10;
+  233 plotData(x, sin (x));
+  234 plotData(x, sin (x));
+  235 x = []
+  236 x = units(1)
+  237 x = ones(1)
+  238 x = ones(1, 1)
+  239 x = ones(3, 3)
+  240 x = []
+  241 x(1)(2) = 3
+  242 x(1) = []
+  243 x(end+1) = 1\
+  244 x
+  245 x(1, 2) = 3
+  246 x(end, 2) = 3
+  247 x(end+1, 2) = 3
+  248 x = []
+  249 x(end+1, 2) = 3
+  250 x.length
+  251 x.size
+  252 x.length()
+  253 x.size()
+  254 length(x)
+  255 size(x)
+  256 if (1) x(1, 1) = 123
+  257 endif
+  258 if (1) x(1, 1) = 123
+  259 end
+  260 if (1) x(1, 1) = 123
+  261 elseif (2) x(1,1) = 321
+  262 end
+  263 if (1) x(1, 1) = 123
+  264 else x(1,1) = 321
+  265 end
+  266 else x(2,1) = 321
+  267  x(2,1) = 321
+  268 plot(x)
+  269 plot(x, 'or')
+  270 X
+  271 y = [1, 0, 1]
+  272 plotData(X, y)
+  273 X(1)
+  274 X(1, :)
+  275 plotData(X, y)
+  276 plotData(X, y)
+  277 X(1:2)
+  278 X(1:2, :)
+  279 X(1, :)
+  280 x = []
+  281 x(end+1) = X(1, :)
+  282 X(1, :)
+  283 x = [](0, 2)
+  284 x = [](1, 2)
+  285 x = [](1x2)
+  286 x = zeros(0, 2)
+  287 x(end+1) = X(1, :)
+  288 x = zeros(2, 0)
+  289 x(end+1) = X(1, :)
+  290 x(end+1) = 1
+  291 x(end+1) = 1, 0
+  292 x(end+1) = [1, 0]
+  293 x = zeros(0, 2)
+  294 x(end+1) = [1, 0]
+  295 x(end+1) = [1 0]
+  296 x(end+1) = [1; 0]
+  297 x(end+1, :) = [1; 0]
+  298 x(end+1, :) = X(1, :)
+  299 x = []
+  300 x(end+1, :) = X(1, :)
+  301 X
+  302 y
+  303 plotData(X, y)
+  304 plotData(X, y)
+  305 submit()
+  306 sigmoid([-1,1,2]
+  307 )
+  308 sigmoid([-1,1,2])
+  309 sigmoid(-1)
+  310 sigmoid(1)
+  311 sigmoid(1)
+  312 sigmoid([-1,1,2])
+  313 sigmoid([-1,1,2; 3, -123, 56432])
+  314 sigmoid([-1,1,2; 3, -123, 56432])
+  315 submit()
+  316 sigmoid([-1,1,2; 3, -123, 56432])
+  317 identity = ones(length(y));
+  318 ones(length(y))
+  319 ones(3)
+  320 eye(3)
+  321 ones(3, 1)
+  322 y
+  323 submit()
+  324 submit()
+  325 submit()
+  326 submit()
+  327 y'
+  328 submit()
+  329 submit()
+  330 submit()
+  331 submit()
+  332 submit()
+  333 submit()
+  334 submit()
+  335 submit()
+  336 submit()
+  337 submit()
+  338 submit()
+  339 submit()
+  340 submit()
+  341 history
+  342 diary on
+  343 history
+  344 X = [
+  345 1, 1;
+  346 1, 2;
+  347 2, 3]
+  348 X = [
+  349 1, 1;
+  350 3, 3;
+  351 ]
+  352 y = [1; 0]
+  353 th = [5, 1, 0]
+  354 X = [1, 1; X]
+  355 X = X(2:3, :)
+  356 X(1)
+  357 X(1, :)
+  358 X(:, :)
+  359 X(:, 1)
+  360 X(:, end)
+  361 X(:, start) 
+  362 X(:, begin) 
+  363 X = [ 
+  364 1, 1, 1;
+  365 X = [ 
+  366 1, 1, 1;
+  367 1, 3, 3;
+  368 ]
+  369 y
+  370 th
+  371 costFunction(th, X, y)
+  372 costFunction(th', X, y)
+  373 costFunction(th, X, y)
+  374 submit()
+  375 submit()
+  376 costFunction(th', X, y)
+  377 s = 1
+  378 s +=1 
+  379 submit()
+  380 submit()
+  381 submit()
+  382 costFunction(th', X, y)
+  383 costFunction(th, X, y)
+  384 th
+  385 X
+  386 th * X
+  387 th * X'
+  388 costFunction(th, X, y)
+  389 submit()
+  390 submit()
+  391 submit()
+  392 submit()
+  393 submit()
+  394 submit()
+  395 submit()
+  396 submit()
+  397 round(0.5)
+  398 round(0.4)
+  399 submit()
+  400 submit()
+  401 X
+  402 y
+  403 identity 
+  404 identity(:)
+  405 a = identity(:)
+  406 a(2:end)
+  407 a(5:end)
+  408 submit()
+  409 submit()
+  410 1'
+  411 2'
+  412 submit()
+  413 submit()
+  414 submit()
+  415 exit
+  416 # Octave 4.0.1, Mon Jun 06 02:38:02 2016 RTZ 2 (зима) <unknown@Рустам-ПК>
+  417 cd C:\Users\Albert\Code\Matlab\Cas
+  418 D = load("data_octave_10-06.txt")
+  419 X = D(:, 1:4);
+  420 y = D(:, 5);
+  421 [P, N] = divideByClass(X, y)
+  422 diary save
+  423 diary on
+  424 mX = linspace(0, 1.8, 30);
+  425 mY = linspace(0, 1.0, 30);
+  426 [XX, YY] = meshgrid(mX, mY);
+  427 costFn = @(th) costFunction(th, X, y)
+  428 th = fminunc(costFn, [-12, 56, 1, 0.4])
+  429 th = fminunc(costFn, [-12; 56; 1; 0.4])
+  430 th = fminunc(costFn)
+  431 th = fminunc(costFn, [2.2; -0.02; 1; 1])
+  432 ZZ = th(1)/th(2) .+ th(3)/th(2) .* XX .+ th(4)/th(2) .* YY;  
+  433 [P, N] = divideByClass(X, y);
+  434 % plot3(P(:, 1), P(:, 2), P(:, 3), 'x', N(:, 1), N(:, 2), N(:, 3), 'o', XX, YY, ZZ);
+  435 diary on
+  436 history
+>> diary save
+>> diary off
+>> help save
+'save' is a built-in function from the file libinterp/corefcn/load-save.cc
+
+ -- Command:  save file
+ -- Command:  save options file
+ -- Command:  save options file V1 V2 ...
+ -- Command:  save options file -struct STRUCT F1 F2 ...
+ -- Command:  save `"-"' V1 V2 ...
+ -- Built-in Function: S = save (`"-"' V1 V2 ...)
+     Save the named variables V1, V2, ..., in the file FILE.
+
+     The special filename `-' may be used to return the content of the
+     variables as a string.  If no variable names are listed, Octave
+     saves all the variables in the current scope.  Otherwise, full
+     variable names or pattern syntax can be used to specify the
+     variables to save.  If the `-struct' modifier is used, fields F1 F2
+     ... of the scalar structure STRUCT are saved as if they were
+     variables with corresponding names.  Valid options for the `save'
+     command are listed in the following table.  Options that modify
+     the output format override the format specified by
+     `save_default_options'.
+
+     If save is invoked using the functional form
+
+          save ("-option1", ..., "file", "v1", ...)
+
+     then the OPTIONS, FILE, and variable name arguments (V1, ...) must
+     be specified as character strings.
+
+     If called with a filename of "-", write the output to stdout if
+     nargout is 0, otherwise return the output in a character string.
+
+    `-append'
+          Append to the destination instead of overwriting.
+
+    `-ascii'
+          Save a single matrix in a text file without header or any
+          other information.
+
+    `-binary'
+          Save the data in Octave's binary data format.
+
+    `-float-binary'
+          Save the data in Octave's binary data format but only using
+          single precision.  Only use this format if you know that all
+          the values to be saved can be represented in single precision.
+
+    `-hdf5'
+          Save the data in HDF5 format.  (HDF5 is a free, portable
+          binary format developed by the National Center for
+          Supercomputing Applications at the University of Illinois.)
+          This format is only available if Octave was built with a link
+          to the HDF5 libraries.
+
+    `-float-hdf5'
+          Save the data in HDF5 format but only using single precision.
+          Only use this format if you know that all the values to be
+          saved can be represented in single precision.
+
+    `-V7'
+    `-v7'
+    `-7'
+    `-mat7-binary'
+          Save the data in MATLAB's v7 binary data format.
+
+    `-V6'
+    `-v6'
+    `-6'
+    `-mat'
+    `-mat-binary'
+          Save the data in MATLAB's v6 binary data format.
+
+    `-V4'
+    `-v4'
+    `-4'
+    `-mat4-binary'
+          Save the data in the binary format written by MATLAB version
+          4.
+
+    `-text'
+          Save the data in Octave's text data format.  (default).
+
+    `-zip'
+    `-z'
+          Use the gzip algorithm to compress the file.  This works
+          equally on files that are compressed with gzip outside of
+          octave, and gzip can equally be used to convert the files for
+          backward compatibility.  This option is only available if
+          Octave was built with a link to the zlib libraries.
+
+     The list of variables to save may use wildcard patterns containing
+     the following special characters:
+
+    `?'
+          Match any single character.
+
+    `*'
+          Match zero or more characters.
+
+    `[ LIST ]'
+          Match the list of characters specified by LIST.  If the first
+          character is `!' or `^', match all characters except those
+          specified by LIST.  For example, the pattern `[a-zA-Z]' will
+          match all lower and uppercase alphabetic characters.
+
+          Wildcards may also be used in the field name specifications
+          when using the `-struct' modifier (but not in the struct name
+          itself).
+
+
+     Except when using the MATLAB binary data file format or the
+     `-ascii' format, saving global variables also saves the global
+     status of the variable.  If the variable is restored at a later
+     time using `load', it will be restored as a global variable.
+
+     The command
+
+          save -binary data a b*
+
+     saves the variable `a' and all variables beginning with `b' to the
+     file `data' in Octave's binary format.
+
+     See also: load, save_default_options, save_header_format_string,
+     dlmread, csvread, fread.
+
+
+
+
+Additional help for built-in functions and operators is
+available in the online version of the manual.  Use the command
+'doc <topic>' to search the manual index.
+
+Help and information about Octave is also available on the WWW
+at http://www.octave.org and via the help@octave.org
+mailing list.
+>> hist = history;
+>> save('history.txt' hist);
+parse error:
+
+  syntax error
+
+>>> save('history.txt' hist);
+                          ^
+
+>> save('history.txt', hist);
+error: : expecting all arguments to be strings
+>> diary
+>> history;
+    1 a = eye(5)
+    2 units(1)
+    3 A = [6 5;
+    4 4 3;
+    5 2 1]
+    6 size(A)
+    7 size(A)[1]
+    8 length(A)
+    9 size(A)
+   10 size(A) 1
+   11 size(A)
+   12 pwd
+   13 help load
+   14 ls
+   15 exit
+   16 # Octave 4.0.1, Sun May 29 19:33:07 2016 RTZ 2 (зима) <unknown@Рустам-ПК>
+   17 HelloWorld
+   18 HelloWorld
+   19 HelloWorld
+   20 HelloWorld
+   21 HelloWorld
+   22 v = [0:0.5:33]
+   23 x = v;
+   24 y1 = exp(x/5)
+   25 x(3)
+   26 x(5)
+   27 y(5)
+   28 y1(5)
+   29 exp(2)
+   30 length(x)
+   31 length(y1)
+   32 y1(1)
+   33 y1(2)
+   34 y1(3)
+   35 x(3)
+   36 plot(x, y1);
+   37 y(1:3)
+   38 y1(1:3)
+   39 plot(x, y1(1:10));
+   40 warmUpExercise()
+   41 submit()
+   42 submit()
+   43 cd ..
+   44 cd `..`;
+   45 exit
+   46 # Octave 4.0.1, Sun May 29 22:04:41 2016 RTZ 2 (зима) <unknown@Рустам-ПК>
+   47 ls
+   48 cd ex1
+   49 warmUpExercise()
+   50 submit()
+   51 help legend
+   52 x
+   53 x = [1:3:99]
+   54 length x
+   55 length (x)
+   56 y1 = sin(pi / 2 * x)
+   57 y1 = sin(3 + pi / 2 * x)
+   58 plotData(x, y1);
+   59 plotData(x, y1);
+   60 submit()
+   61 x = [1:1:3]
+   62 y = x
+   63 X = ones(3, 2)
+   64 X(:, 2)
+   65 X(:, 2) = [1 2 3]
+   66 y = [1, 2, 3]
+   67 y = y'
+   68 y = [1 2 3]
+   69 theta = [0 1]
+   70 computeCost(X, y', theta') 
+   71 theta = [0 0]
+   72 computeCost(X, y', theta') 
+   73 submit()
+   74 a = 5
+   75 b = a
+   76 a = 6
+   77 b
+   78 a = eye(3)
+   79 b = a
+   80 b(1, 1) = 100
+   81 a
+   82 a - b
+   83 ans
+   84 ans(1,1)
+   85 ans(1,2) = 3
+   86 ans
+   87 a
+   88 a(1, 2) = 3
+   89 X
+   90 y
+   91 y1
+   92 h
+   93 h = y - 0.1
+   94 gradientDescent(X, y, [0 1.5], 0.01, 100)
+   95 gradientDescent(X, y, [0; 1.5], 0.01, 100)
+   96 gradientDescent(X, y, [0; 1.5], 0.01, 100)
+   97 gradientDescent(X, y, [0; 1.5], 0.01, 100)
+   98 gradientDescent(X, y, [0; 1.5], 0.01, 100)
+   99 gradientDescent(X, y, [0; 1.5], 0.01, 100)
+  100 gradientDescent(X, y, [0; 1.5], 0.01, 100)
+  101 sum(ans)
+  102 a
+  103 y
+  104 sum(y)
+  105 gradientDescent(X, y, [0; 1.5], 0.01, 100)
+  106 gradientDescent(X, y, [0; 1.5], 0.01, 100)
+  107 gradientDescent(X, y, [0; 1.5], 0.01, 100)
+  108 gradientDescent(X, y, [0; 1.5], 0.01, 100)
+  109 gradientDescent(X, y, [0; 1.5], 0.01, 100)
+  110 gradientDescent(X, y', [0; 1.5], 0.01, 100)
+  111 [th, J_hs] = gradientDescent(X, y', [0; 1.5], 0.01, 100);
+  112 [th, J_hs] = gradientDescent(X, y', [0; 1.5], 0.01, 100);
+  113 th
+  114 theta = [0; 1.5]
+  115 computeCost(X, y, theta)
+  116 [th, J_hs] = gradientDescent(X, y', theta, 0.01, 100);
+  117 th
+  118 computeCost(X, y, theta)
+  119 computeCost(X, y', theta)
+  120 computeCost(X, y', th)
+  121 [th, J_hs] = gradientDescent(X, y', theta, 0.01, 500);
+  122 computeCost(X, y', th)
+  123 for i = 1:100
+  124 plotData(J_hs, 1:500);
+  125 [th, J_hs] = gradientDescent(X, y', theta, 50.1, 500);
+  126 plotData(J_hs, 1:500);
+  127 [th, J_hs] = gradientDescent(X, y', theta, 1.1, 500);
+  128 plotData(J_hs, 1:500);
+  129 help gnuplot_binary
+  130 [th, J_hs] = gradientDescent(X, y', theta, 0.1, 500);
+  131 plotData(J_hs, 1:500);
+  132 [th, J_hs] = gradientDescent(X, y', theta, 0.3, 500);
+  133 plotData(J_hs, 1:500);
+  134 [th, J_hs] = gradientDescent(X, y', theta, 0.0003, 500);
+  135 [th, J_hs] = gradientDescent(X, y', theta, 2.3, 500);
+  136 plotData(J_hs, 1:500);
+  137 plotData(J_hs, 1:500);
+  138 [th, J_hs] = gradientDescent(X, y', theta, 2.3, 50);
+  139 plotData(J_hs, 1:50);
+  140 graphics_toolkit('gnuplot')
+  141 gnuplot(J_hs, 1:50)
+  142 gnuplot_binary(J_hs, 1:50)
+  143 submit()
+  144 history
+  145 history 20
+  146 history_ex1 = history;
+  147 history_ex1
+  148 help save 
+  149 save("ex1_hist.txt", history_ex1)
+  150 save("ex1_hist.txt", cell2str(history_ex1))
+  151 hst = history_ex1 + ' end';
+  152 hst = mat2str(history_ex1)
+  153 hst = mat2str(history_ex1, 3)
+  154 hst = mat2str(history_ex1, 3, "cell")
+  155 diary on
+  156 history_ex1
+  157 diary off
+  158 diary
+  159 diary on
+  160 'Hello'
+  161 diary off
+  162 exit
+  163 exit
+  164 # Octave 4.0.1, Mon May 30 02:08:17 2016 RTZ 2 (зима) <unknown@Рустам-ПК>
+  165 A = [1 2; 3 4; 5 6];
+  166 B = [1 2 3; 4 5 6];
+  167 C = B + A
+  168 C = A' + B
+  169 C = B' + A
+  170 C = A' * B
+  171 C = A * B
+  172 A(:, 0:1)
+  173 A
+  174 A(:)
+  175 A(:, 1)
+  176 A(1:3, 1)
+  177 for i = 1:7
+  178   for j = 1:7
+  179     A(i, j) = log(X(i, j));
+  180     B(i, j) = X(i, j) ^ 2;
+  181     C(i, j) = X(i, j) + 1;
+  182     D(i, j) = X(i, j) / 4;
+  183   end
+  184 end
+  185 X = magic(7)
+  186 for i = 1:7
+  187   for j = 1:7
+  188     A(i, j) = log(X(i, j));
+  189     B(i, j) = X(i, j) ^ 2;
+  190     C(i, j) = X(i, j) + 1;
+  191     D(i, j) = X(i, j) / 4;
+  192   end
+  193 end
+  194 C == X + 1
+  195 C
+  196 X + 1
+  197 X
+  198 D
+  199 X / 4
+  200 B
+  201 X ^ 2
+  202 X .^ 2
+  203 B
+  204 X ^ 2
+  205 X
+  206 v = rand(7)
+  207 v = v(:, 1)
+  208 X * v
+  209 X v
+  210 v' * X
+  211 X * v
+  212 sun(X * v)
+  213 sum(X * v)
+  214 v1 = rand(7)(:, 2)
+  215 v
+  216 v * v1
+  217 v * v1'
+  218 v' * v1
+  219 v
+  220 v' * v1
+  221 sum(v * v1)
+  222 v' * v1
+  223 v * v1'
+  224 exit
+  225 # Octave 4.0.1, Mon May 30 02:56:08 2016 RTZ 2 (зима) <unknown@Рустам-ПК>
+  226 cd C:\Users\Albert\Code\Matlab\Standford-ML\machine-learning-ex2\ex2
+  227 ls
+  228 X = [3 2; 1 2; 6 7]
+  229 plotData(X, sin(X))
+  230 x = -10:0.1:10;
+  231 plotData(x, sin (x));
+  232 x = -10:0.7:10;
+  233 plotData(x, sin (x));
+  234 plotData(x, sin (x));
+  235 x = []
+  236 x = units(1)
+  237 x = ones(1)
+  238 x = ones(1, 1)
+  239 x = ones(3, 3)
+  240 x = []
+  241 x(1)(2) = 3
+  242 x(1) = []
+  243 x(end+1) = 1\
+  244 x
+  245 x(1, 2) = 3
+  246 x(end, 2) = 3
+  247 x(end+1, 2) = 3
+  248 x = []
+  249 x(end+1, 2) = 3
+  250 x.length
+  251 x.size
+  252 x.length()
+  253 x.size()
+  254 length(x)
+  255 size(x)
+  256 if (1) x(1, 1) = 123
+  257 endif
+  258 if (1) x(1, 1) = 123
+  259 end
+  260 if (1) x(1, 1) = 123
+  261 elseif (2) x(1,1) = 321
+  262 end
+  263 if (1) x(1, 1) = 123
+  264 else x(1,1) = 321
+  265 end
+  266 else x(2,1) = 321
+  267  x(2,1) = 321
+  268 plot(x)
+  269 plot(x, 'or')
+  270 X
+  271 y = [1, 0, 1]
+  272 plotData(X, y)
+  273 X(1)
+  274 X(1, :)
+  275 plotData(X, y)
+  276 plotData(X, y)
+  277 X(1:2)
+  278 X(1:2, :)
+  279 X(1, :)
+  280 x = []
+  281 x(end+1) = X(1, :)
+  282 X(1, :)
+  283 x = [](0, 2)
+  284 x = [](1, 2)
+  285 x = [](1x2)
+  286 x = zeros(0, 2)
+  287 x(end+1) = X(1, :)
+  288 x = zeros(2, 0)
+  289 x(end+1) = X(1, :)
+  290 x(end+1) = 1
+  291 x(end+1) = 1, 0
+  292 x(end+1) = [1, 0]
+  293 x = zeros(0, 2)
+  294 x(end+1) = [1, 0]
+  295 x(end+1) = [1 0]
+  296 x(end+1) = [1; 0]
+  297 x(end+1, :) = [1; 0]
+  298 x(end+1, :) = X(1, :)
+  299 x = []
+  300 x(end+1, :) = X(1, :)
+  301 X
+  302 y
+  303 plotData(X, y)
+  304 plotData(X, y)
+  305 submit()
+  306 sigmoid([-1,1,2]
+  307 )
+  308 sigmoid([-1,1,2])
+  309 sigmoid(-1)
+  310 sigmoid(1)
+  311 sigmoid(1)
+  312 sigmoid([-1,1,2])
+  313 sigmoid([-1,1,2; 3, -123, 56432])
+  314 sigmoid([-1,1,2; 3, -123, 56432])
+  315 submit()
+  316 sigmoid([-1,1,2; 3, -123, 56432])
+  317 identity = ones(length(y));
+  318 ones(length(y))
+  319 ones(3)
+  320 eye(3)
+  321 ones(3, 1)
+  322 y
+  323 submit()
+  324 submit()
+  325 submit()
+  326 submit()
+  327 y'
+  328 submit()
+  329 submit()
+  330 submit()
+  331 submit()
+  332 submit()
+  333 submit()
+  334 submit()
+  335 submit()
+  336 submit()
+  337 submit()
+  338 submit()
+  339 submit()
+  340 submit()
+  341 history
+  342 diary on
+  343 history
+  344 X = [
+  345 1, 1;
+  346 1, 2;
+  347 2, 3]
+  348 X = [
+  349 1, 1;
+  350 3, 3;
+  351 ]
+  352 y = [1; 0]
+  353 th = [5, 1, 0]
+  354 X = [1, 1; X]
+  355 X = X(2:3, :)
+  356 X(1)
+  357 X(1, :)
+  358 X(:, :)
+  359 X(:, 1)
+  360 X(:, end)
+  361 X(:, start) 
+  362 X(:, begin) 
+  363 X = [ 
+  364 1, 1, 1;
+  365 X = [ 
+  366 1, 1, 1;
+  367 1, 3, 3;
+  368 ]
+  369 y
+  370 th
+  371 costFunction(th, X, y)
+  372 costFunction(th', X, y)
+  373 costFunction(th, X, y)
+  374 submit()
+  375 submit()
+  376 costFunction(th', X, y)
+  377 s = 1
+  378 s +=1 
+  379 submit()
+  380 submit()
+  381 submit()
+  382 costFunction(th', X, y)
+  383 costFunction(th, X, y)
+  384 th
+  385 X
+  386 th * X
+  387 th * X'
+  388 costFunction(th, X, y)
+  389 submit()
+  390 submit()
+  391 submit()
+  392 submit()
+  393 submit()
+  394 submit()
+  395 submit()
+  396 submit()
+  397 round(0.5)
+  398 round(0.4)
+  399 submit()
+  400 submit()
+  401 X
+  402 y
+  403 identity 
+  404 identity(:)
+  405 a = identity(:)
+  406 a(2:end)
+  407 a(5:end)
+  408 submit()
+  409 submit()
+  410 1'
+  411 2'
+  412 submit()
+  413 submit()
+  414 submit()
+  415 exit
+  416 # Octave 4.0.1, Mon Jun 06 02:38:02 2016 RTZ 2 (зима) <unknown@Рустам-ПК>
+  417 cd C:\Users\Albert\Code\Matlab\Cas
+  418 D = load("data_octave_10-06.txt")
+  419 X = D(:, 1:4);
+  420 y = D(:, 5);
+  421 [P, N] = divideByClass(X, y)
+  422 diary save
+  423 diary on
+  424 mX = linspace(0, 1.8, 30);
+  425 mY = linspace(0, 1.0, 30);
+  426 [XX, YY] = meshgrid(mX, mY);
+  427 costFn = @(th) costFunction(th, X, y)
+  428 th = fminunc(costFn, [-12, 56, 1, 0.4])
+  429 th = fminunc(costFn, [-12; 56; 1; 0.4])
+  430 th = fminunc(costFn)
+  431 th = fminunc(costFn, [2.2; -0.02; 1; 1])
+  432 ZZ = th(1)/th(2) .+ th(3)/th(2) .* XX .+ th(4)/th(2) .* YY;  
+  433 [P, N] = divideByClass(X, y);
+  434 % plot3(P(:, 1), P(:, 2), P(:, 3), 'x', N(:, 1), N(:, 2), N(:, 3), 'o', XX, YY, ZZ);
+  435 diary on
+  436 history
+  437 diary save
+  438 diary off
+  439 diary save
+  440 help save
+  441 hist = history;
+  442 save('history.txt' hist);
+  443 save('history.txt', hist);
+  444 diary
+  445 save diary
+  446 save history
+  447 diary on
+  448 history;
+>> diary off

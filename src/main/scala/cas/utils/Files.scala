@@ -10,6 +10,8 @@ object Files {
   val dealers = resources + "/cas/dealers"
   val currentDealer = dealers + "/UsingDealer.json"
 
+  val static = new File(".").getCanonicalPath + "/src/static"
+
   def writeToFile(path: String, content: String) = {
     val file = new File(path)
     val tryFile = if (!file.exists()) Try(file.createNewFile()) else Success(true)

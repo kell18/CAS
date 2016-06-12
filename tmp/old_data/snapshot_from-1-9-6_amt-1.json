@@ -1,0 +1,11 @@
+{
+  "data": [{
+    "post": "Some post descr",
+    "text": "#$%^&*as;lfd \\\\t\\\\t \\\\r\\\\n\\\\n\\\\r<<\\/ ** Fancy comment",
+    "likes": 10,
+    "id": "post1_cmt1",
+    "date": "09/06/2016 01:52:42",
+    "relevance": 0.0,
+    "isToDelete": 0
+  }]
+}

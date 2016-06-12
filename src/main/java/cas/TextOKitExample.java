@@ -23,6 +23,7 @@ import static org.apache.uima.fit.factory.AnalysisEngineFactory.createEngineDesc
 
 import java.io.File;
 import java.io.IOException;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class TextOKitExample {
@@ -54,12 +55,6 @@ public class TextOKitExample {
             }
             // mark the end of a document
             System.out.println("\n");
-        }*/
-
-        /*Pattern p = Pattern.compile("(\\b[^\\p{Separator}]+\\b)");
-        String[] splitted = p.split("фывфыв фыв фывфывфыв фывфыв");
-        for (String w : splitted) {
-            System.out.println(w + ", ");
         }*/
     }
 }

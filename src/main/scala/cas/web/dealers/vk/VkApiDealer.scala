@@ -1,6 +1,7 @@
 package cas.web.dealers.vk
 
 import java.net.URLEncoder
+
 import akka.event.Logging
 import akka.actor.ActorSystem
 import cas.analysis.subject.Subject
@@ -8,7 +9,6 @@ import cas.analysis.subject.components._
 import cas.service.ARouter.Estimation
 import cas.service.ContentDealer
 import cas.utils.{Utils, Web}
-import cas.utils.Mathf.sec2Millis
 import cas.web.dealers.vk.VkApiProtocol._
 import cas.utils.StdImplicits._
 import cas.utils.UtilAliases._
@@ -28,6 +28,7 @@ import Utils._
 import cas.persistence.searching.SearchEngine
 import scala.util.control.NonFatal
 import java.util.concurrent.{BlockingQueue, LinkedBlockingQueue}
+import cas.math.Mathf.sec2Millis
 
 object VkApiDealer {
   import VkApiProtocol._
