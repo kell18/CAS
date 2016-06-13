@@ -84,7 +84,7 @@ object ElasticSearch {
 }
 
 class ElasticSearch(val host: String = ElasticSearch.defaultHost, index: String = "cas-ind",
-                    mtype: String = "docs", ttl: Duration = Duration("48 hours"))
+                    mtype: String = "docs", ttl: Duration = Duration("2 hours"))
                    (implicit val system: ActorSystem) extends SearchEngine {
   import ElasticProtocol._
   import spray.httpx.SprayJsonSupport._
