@@ -1,6 +1,7 @@
 package cas.web.interface
 
 import java.io.File
+
 import akka.actor.{ActorSystem, Props}
 import akka.io.IO
 import akka.pattern.ask
@@ -11,15 +12,19 @@ import cas.utils._
 import cas.web.dealers.vk.VkApiDealer
 import com.typesafe.config.ConfigFactory
 import spray.can.Http
+
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 import org.elasticsearch.common.settings.Settings
+
 import scala.xml._
 import scala.xml.factory.XMLLoader
 import scala.xml.parsing.NoBindingFactoryAdapter
 import org.ccil.cowan.tagsoup.jaxp.SAXFactoryImpl
 import Utils._
 import akka.event.Logging
+import cas.analysis.subject.Subject
+import cas.analysis.subject.components.{Description, Likability}
 import cas.math.Optimization
 import cas.persistence.{ASubjectsGrader, SubjectsGrader}
 import cas.persistence.SubjectsGraderProtocol.{Data, Features}
@@ -27,6 +32,7 @@ import cas.utils.Files._
 import cas.utils.UtilAliases.ErrorMsg
 import cas.web.dealers.DealersFactory
 import cas.web.pages.ConfigurePage
+
 import scala.collection.immutable.NumericRange
 import scala.concurrent.duration._
 import scala.xml.{Node, XML}
@@ -47,11 +53,16 @@ object Boot extends App {
   import ImplicitRuntime._
   import system.dispatcher
 
-  StartTasks.transformData
+  // StartTasks.transformData
+  StartTasks.runServer
 }
 
 object StartTasks {
   import ImplicitRuntime._
+
+  val weights = Array(3.1642, -61.6405, -15.6417, -1.7404)
+  val classifier = new StaticDataClassificator(weights,
+    new StaticLoyaltyEstimator(StaticLoyaltyConfigs()), new CorrectnessEstimator(CorrectnessConfigs()))
 
   def runServer = {
     implicit val timeout = Timeout(10.seconds)
@@ -69,6 +80,7 @@ object StartTasks {
   def gradeComments(amt: Int) = {
     val dealer = DealersFactory.buildDealer(VkApiDealer.id, ConfigurePage.searcher).get
     val grader = system.actorOf(Props(new ASubjectsGrader(dealer, amt)))
+    runServer
   }
 
   def exploreData = {
@@ -119,21 +131,62 @@ object StartTasks {
       // (2.0 * P * R) / (P + R)
     }
 
+    def likesCostFn(data: List[Data])(threshold: Int) = {
+      var TP = 0.0
+      var TN = 0.0
+      var FP = 0.0
+      var FN = 0.0
+      data.foreach(d => {
+        val predictedClass = if (d.features.likes > threshold) 0 else 1
+        if (predictedClass > d.isToDelete) {
+          FP += 1.0
+        } else {
+          if (predictedClass != d.isToDelete) FN += 1.0
+          else if (predictedClass == 1) TP += 1.0 else TN += 1.0
+        }
+      })
+      val P = TP / (TP + FP)
+      val R = TP / (TP + FN)
+      println("FP: " + FP + " FN: " + FN)
+      println("TP: " + TP + " TN: " + TN)
+      // 1.0 - (2.0 * P * R) / (P + R)
+      1.0 - (TP + TN) / (TP + TN + FP + FN)
+    }
+
     for {
       data <- grader.convertDumpToData(
-        "C:\\Users\\Albert\\Code\\Scala\\CAS\\resources\\cas\\data\\marked\\marked_validation.json")
+        "C:\\Users\\Albert\\Code\\Scala\\CAS\\resources\\cas\\data\\marked\\marked_train.json")
     } yield {
       val likes = data.map(_.features.likes)
       val likesAvg = likes.sum.toDouble / likes.length.toDouble
       val likesMax = likes.max.toDouble
-      val r = data.map { d =>
+      /*val r = data.map { d =>
         (printMultiClass(predictClass(d.features), d.isToDelete), postProcess(d.features, likesAvg, likesMax))
       } filter { p =>
         p._1 != "True"
       }
       val fpAmt = r.count(p => p._1 == "FP")
-      val fnAmt = r.count(p => p._1 == "FN")
-      println("fpAmt: " + fpAmt + " fnAmt: " + fnAmt)
+      val fnAmt = r.count(p => p._1 == "FN")*/
+      // v: 13, 10
+      // te: 14, 10
+      // tr: 87, 36
+      // println("fpAmt: " + fpAmt + " fnAmt: " + fnAmt)
+
+      /*
+      val errs: scala.collection.mutable.Map[ClassificationError.Value, Int] = scala.collection.mutable.Map()
+      tsData.foreach { i =>
+        val subj = Subject(List(Description(i.features.text), Likability(i.features.likes)))
+        val predicted = classifier.predictClass(subj, i.features.relevance).right.get
+        val err = ClassificationError.fromSubjClass(predicted, SubjectClass.fromInt(i.isToDelete))
+        if (!errs.contains(err)) errs(err) = 0
+        errs(err) += 1
+      }
+      errs.foreach(println)*/
+
+      println("Data parsed, start optimization...")
+      val rng = for (i <- 1 to 200) yield i
+      // println(relevanceCostFn(data)(0.386))
+      println(Optimization.findMin_brute(likesCostFn(data), rng))
       /*filter { p =>
         p._1 == "FP" && p._2.correct > 0.6
       } foreach { println }*/
@@ -153,21 +206,44 @@ object StartTasks {
   def transformData = {
     val grader: SubjectsGrader = new SubjectsGrader(50)
     val legend = "Class,likes,relevance,correctness,dummy\n"
-    val tryData = grader.convertDumpToData(
-      "C:\\Users\\Albert\\Code\\Scala\\CAS\\resources\\cas\\data\\marked\\marked_train.json")
+
+    for {
+      trData <- grader.convertDumpToData(
+        "C:\\Users\\Albert\\Code\\Scala\\CAS\\resources\\cas\\data\\marked\\marked_train.json")
+      vlData <- grader.convertDumpToData(
+        "C:\\Users\\Albert\\Code\\Scala\\CAS\\resources\\cas\\data\\marked\\marked_validation.json")
+      tsData <- grader.convertDumpToData(
+        "C:\\Users\\Albert\\Code\\Scala\\CAS\\resources\\cas\\data\\marked\\marked_test.json")
+    } yield {
+      val likes = trData.map(_.features.likes)
+      val likesAvg = likes.sum.toDouble / likes.length.toDouble
+      val likesMax = likes.max.toDouble
+
+      val csvList = for {
+        d <- tsData
+        subj = Subject(List(Description(d.features.text), Likability(d.features.likes)))
+        predicted = classifier.predictClass_loyaltyAndRel(subj, d.features.relevance).right.get
+        clErr = ClassificationError.fromSubjClass(predicted, SubjectClass.fromInt(d.isToDelete))
+        // if clErr == ClassificationError.FP
+      } yield {
+        clErr + "," + postProcess(d.features, likesAvg, likesMax).toCsv
+      }
+      Files.writeToFile(Files.static + "/data-err-likes-rel_test_14-06.csv", legend + csvList.mkString("\n"))
 
 
-    tryData match {
-      case Success(data) =>
-        val likes = data.map(_.features.likes)
-        val likesAvg = likes.sum.toDouble / likes.length.toDouble
-        val likesMax = likes.max.toDouble
-        Files.writeToFile(Files.static + "/data-train_oct.txt",
-        /*legend + */(data.map { i =>
-           /*printMultiClass(predictClass(i.features), i.isToDelete) + "," + */
+      /*Files.writeToFile(Files.static + "/data-train_oct.txt",
+        /*legend + */(trData.map { i =>
+          /*printMultiClass(predictClass(i.features), i.isToDelete) + "," + */
           postProcess(i.features, likesAvg, likesMax).toTxt + " " + i.isToDelete
         } mkString "\n"))
-      case Failure(ex) => println(s"Err: `${ex.getMessage}`")
+      Files.writeToFile(Files.static + "/data-validation_oct.txt",
+        (vlData.map { i =>
+          postProcess(i.features, likesAvg, likesMax).toTxt + " " + i.isToDelete
+        } mkString "\n"))
+      Files.writeToFile(Files.static + "/data-test_oct.txt",
+        (tsData.map { i =>
+          postProcess(i.features, likesAvg, likesMax).toTxt + " " + i.isToDelete
+        } mkString "\n"))*/
     }
   }
 
@@ -178,7 +254,7 @@ object StartTasks {
 
   def postProcess(f: Features, likesAvg: Double, likesMax: Double) = {
     val correctness = computeCorrectness(f)
-    val l = (f.likes.toDouble - likesAvg) / likesMax + 0.1 - 0.0577638190954774
+    val l = (f.likes.toDouble - likesAvg) / likesMax + 0.060667001843472436
     PostData(l, f.relevance, correctness)
   }
 
@@ -197,9 +273,10 @@ object StartTasks {
   }
 
   def predictClass(f: Features) = {
-    val threshold = 0.088
-    val correctness = computeCorrectness(f)
-    if (f.relevance > threshold) 0 else if (f.likes > 6) 0 else (if (correctness > 0.66 && f.relevance > 0.4) 0 else 1)
+
+//    val threshold = 0.088
+//    val correctness = computeCorrectness(f)
+//    if (f.relevance > threshold) 0 else if (f.likes > 6) 0 else 1 // (if (correctness > 0.66 && f.relevance > 0.4) 0 else 1)
   }
 
   def printMultiClass(predicted: Int, actual: Int) = {
