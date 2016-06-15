@@ -1,5 +1,7 @@
 # CAS. Content analysis system
 
+TODO: Update README.md
+
 System for analysis actuality of comments, feedback, etc.
 
 <br>
