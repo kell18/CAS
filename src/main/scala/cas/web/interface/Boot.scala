@@ -54,7 +54,8 @@ object Boot extends App {
   import system.dispatcher
 
   // StartTasks.transformData
-  StartTasks.runServer
+  // StartTasks.runServer
+  StartTasks.exploreData
 }
 
 object StartTasks {
@@ -155,22 +156,25 @@ object StartTasks {
 
     for {
       data <- grader.convertDumpToData(
-        "C:\\Users\\Albert\\Code\\Scala\\CAS\\resources\\cas\\data\\marked\\marked_train.json")
+        "C:\\Users\\Albert\\Code\\Scala\\CAS\\resources\\cas\\data\\marked\\marked_test.json")
     } yield {
       val likes = data.map(_.features.likes)
       val likesAvg = likes.sum.toDouble / likes.length.toDouble
       val likesMax = likes.max.toDouble
-      /*val r = data.map { d =>
+      val r = data.map { d =>
         (printMultiClass(predictClass(d.features), d.isToDelete), postProcess(d.features, likesAvg, likesMax))
-      } filter { p =>
-        p._1 != "True"
       }
-      val fpAmt = r.count(p => p._1 == "FP")
-      val fnAmt = r.count(p => p._1 == "FN")*/
+      val TP = r.count(p => p._1 == "TP").toDouble
+      val TN = r.count(p => p._1 == "TN").toDouble
+      val FP = r.count(p => p._1 == "FP").toDouble
+      val FN = r.count(p => p._1 == "FN").toDouble
       // v: 13, 10
       // te: 14, 10
       // tr: 87, 36
-      // println("fpAmt: " + fpAmt + " fnAmt: " + fnAmt)
+      println("TP: " + TP + " TN: " + TN + " FP: " + FP + " FN: " + FN)
+      println("A : " + ((TP + TN) / data.length))
+      println("P : " + (TP / (TP + FP)))
+      println("R : " + (TP / (TP + FN)))
 
       /*
       val errs: scala.collection.mutable.Map[ClassificationError.Value, Int] = scala.collection.mutable.Map()
@@ -183,10 +187,10 @@ object StartTasks {
       }
       errs.foreach(println)*/
 
-      println("Data parsed, start optimization...")
-      val rng = for (i <- 1 to 200) yield i
+      // println("Data parsed, start optimization...")
+      // val rng = for (i <- 1 to 200) yield i
       // println(relevanceCostFn(data)(0.386))
-      println(Optimization.findMin_brute(likesCostFn(data), rng))
+      // println(Optimization.findMin_brute(likesCostFn(data), rng))
       /*filter { p =>
         p._1 == "FP" && p._2.correct > 0.6
       } foreach { println }*/
@@ -273,17 +277,21 @@ object StartTasks {
   }
 
   def predictClass(f: Features) = {
-
-//    val threshold = 0.088
-//    val correctness = computeCorrectness(f)
-//    if (f.relevance > threshold) 0 else if (f.likes > 6) 0 else 1 // (if (correctness > 0.66 && f.relevance > 0.4) 0 else 1)
+    val relThreshold = 0.088
+    val likesThreshold = 6
+    val correctness = computeCorrectness(f)
+    if (f.relevance > relThreshold) 0
+    else if (f.likes > likesThreshold.toInt) 0
+         else if (correctness > 0.7 &&
+                  (f.relevance > (relThreshold / 2.0) || f.likes > likesThreshold / 2)) 0
+              else 1
   }
 
   def printMultiClass(predicted: Int, actual: Int) = {
     if (predicted > actual) "FP"
     else {
       if (predicted != actual) "FN"
-      else "True" // if (actual == 0) "TN" else "TP"
+      else if (actual == 0) "TN" else "TP" // "True" //
     }
   }
 
