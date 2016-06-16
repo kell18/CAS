@@ -21,13 +21,15 @@ grad = zeros(size(theta));
 identity = ones(m, 1);
 hX = sigmoid(X * theta);
 % l = -y .* log(hX)
-J = (-1/m * sum(y .* log(hX) + (identity - y) .* log(identity - hX))) + lambda/(2*m) * sum(theta(2:end).^2);
+J = (-1/m * sum(0.9 .* y .* log(hX) + 1.1 .* (identity - y) .* log(identity - hX))) + lambda/(2*m) * sum(theta(2:end).^2);
 
 grad = (1/m * (hX - y)' * X) + lambda/m * theta';
 grad(1) = 1/m * sum(hX - y) * X(1, 1);
 
-
-
+predicted = hX >= 0.5;
+errors = y - predicted;
+FP = length(find(errors < 0));
+FN = length(find(errors > 0));
 
 
 % =============================================================
