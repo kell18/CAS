@@ -91,7 +91,7 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
       if estim.actuality < actualityThreshold
     } yield for {
       id <- estim.subj.getComponent[ID]
-     _ = logEstim(estim, "Deleting comment")
+     _ = Try(logEstim(estim, "Deleting comment"))
     } yield buildDelLine(cfg.ownerId.toString, id.value)).map(_.right.getOrElse("")).mkString // TODO: Rm
     if (scriptLines.nonEmpty) for {
       resp <- pipeline(Get(buildRequest("execute","access_token" -> cfg.token ::
@@ -103,7 +103,7 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
   }
 
   override def initialize: Future[Any] = {
-    val queryCount = (cfg.siftCount / cfg.postsPerQuery).toInt
+    val queryCount = cfg.siftCount / cfg.postsPerQuery
     def _init(chunkF: Future[Any], ind: Int = 1): Future[Any] = {
       if (ind < queryCount) {
         Thread.sleep(estimatedQueryFrequency.toMillis)
@@ -154,8 +154,8 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
     println("[" + new DateTime().getHourOfDay + ":" + new DateTime().getMinuteOfHour + "] " + action +
       " likes cnt: `" + estim.subj.getComponent[Likability].get.value + "`" +
       " text: `" + estim.subj.getComponent[Description].get.text + "`" +
-      " time elapsed: `" + new Period(estim.subj.getComponent[CreationDate].get.value,
-          DateTime.now()).toStandardSeconds.getSeconds + " sec`"+
+      " time elapsed: `" + (new org.joda.time.Duration(estim.subj.getComponent[CreationDate].get.value,
+          DateTime.now()).getMillis / 1000).toString + " sec`"+
       " actuality: `" + estim.actuality + "` ")
   }
 

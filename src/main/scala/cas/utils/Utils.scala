@@ -20,12 +20,6 @@ object Utils {
     ConfigFactory.parseFile(new File(confPath + "/application.conf"))
   )
 
-  // TODO: Move to Files
-  def writeToFile(path: String, s: String): Unit = {
-    val pw = new java.io.PrintWriter(new File(path))
-    try { pw.write(s) } catch { case ex: Throwable => println ("Ex: " + ex.getMessage) } finally pw.close()
-  }
-
   def loadXml(s: String): Node = {
     val factory = new SAXFactoryImpl()
     val loader = XML.withSAXParser(factory.newSAXParser())

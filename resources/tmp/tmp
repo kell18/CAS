@@ -1,32 +1,3 @@
-Ноуты:
-1. Core i5, 8 GB RAM, 256 GB SSD Touchscreen
-http://www.amazon.com/ASUS-ZenBook-UX303UA-13-3-Inch-FHD-Touchscreen-Laptop-Intel-Core-i5-8-GB-RAM-256-GB-SSD-Windows-10-64-bit/dp/B014VHW24Y/ref=cm_cr_getr_d_rvw_txt?ie=UTF8
-
-2. SSD 256, i7 6500U, Nvidia GTX950M, 15-inch = 789.99
-http://www.amazon.com/gp/product/B0146DD02G?psc=1&redirect=true&ref_=ox_sc_act_title_3&smid=ATVPDKIKX0DER
-
-Запасные варианты
-
-https://market.yandex.ru/product/12486115/spec?hid=91013&track=char_map
-
-Игровой но с HDD: 
-http://www.amazon.com/gp/product/B015QZVA6G?psc=1&redirect=true&ref_=ox_sc_act_title_2&smid=A2TC87EJKQMY9O
-
-i5-5200U/8G/256SSD/FHD 
-CUK. Хз доставят или нет. 
-http://www.amazon.com/gp/product/B00X409AN6?psc=1&redirect=true&ref_=ox_sc_act_title_5&smid=A2TC87EJKQMY9O
-
-Zen305 Black
-http://www.amazon.com/ZenBook-UX305CA-13-3-Inch-Touchscreen-Quad-HD/dp/B014VHWFKA/ref=sr_1_3?s=pc&ie=UTF8&qid=1458211621&sr=1-3&keywords=asus+305
-
-LG Core i5 / 128GB SSD / 8 GB / 13-inch = $619.99
-http://www.amazon.com/gp/product/B0158XJX6U?psc=1&redirect=true&ref_=ox_sc_act_title_4&smid=AZZ6L3UVDX4O
-
-Core i7, 8GB, 1TB HDD, Intel HD (?)
-http://www.amazon.com/gp/product/B014LE6A6I?psc=1&redirect=true&ref_=ox_sc_act_title_1&smid=ATVPDKIKX0DER
-
-SSD 256 / Core i5 6200U / 8 GB RAM
-http://www.amazon.com/Zenbook-UX305LA-13-3-Inch-Generation-Titanium/dp/B013KKANTE/ref=sr_1_1?s=pc&ie=UTF8&qid=1458211621&sr=1-1&keywords=asus+305
 
 
  // https://api.vk.com/method/wall.get?owner_id=-29534144&count=1&v=5.7
@@ -97,40 +68,6 @@ _ = Utils.time { resp.entity.asString.parseJson.asJsObject.fields("response").as
     })
 
 
-
-case SiftTick(s) =>
-      val responce = for {
-        toSift <- router.getSubjectsChunk
-        chunks <- divideToChunks(toSift)
-        chunk <- chunks
-        toDel <- findDeletingSubjs(chunk) // TODO: Parallel
-        isSended <- router.sendToDelete(toDel)
-      } yield SiftTick
-      responce pipeTo self
-
-
-class AContentSifter(val service: ApiService, val maxUnits: Long) extends Actor {
-  val (grSize, unitsCnt) = divideByUnits(service.estimateTagsLim)
-  val units = for (i <- 0L until unitsCnt) yield SiftersFactory.createSiftUnit(service)
-
-  override def receive = {
-    case StartSift(estim) => {
-      for {
-        i <- 0L until unitsCnt
-        subjT = service.getSubjectsTags(i, grSize)
-        if (subjT.length > 0) // TODO: Check it carefuly
-        sifterA = SiftersFactory.createSiftUnit(service)
-        sifterRespF <- sifterA ? StartSiftUnit(estim, subjT)
-      } sifterRespF mapTo[] self
-    }
-    case unknown => ??? // Log upper
-  }
-
-  // TODO:
-  def divideByUnits(tagsCount: Long): Tuple2[Long, Long] = if (tagsCount < maxUnits) (1, tagsCount) else ???
-  // else ((tagsCount + maxUnits - 1) / maxUnits, maxUnits)
-
-}
 
 object SiftersFactory {
   def createSiftUnit(service: ApiService) = Props(new ASiftUnit(service))

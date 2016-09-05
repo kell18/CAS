@@ -5,16 +5,17 @@ import cas.analysis.estimation._
 import cas.utils.StdImplicits.RightBiasedEither
 import cas.analysis.subject.Subject
 import cas.analysis.subject.components.{CreationDate, Likability, Virality}
-import org.joda.time.{DateTime, Period}
+import org.joda.time.{DateTime, Period, Duration}
 import org.specs2.mutable.Specification
 
 class LoyaltyEstimatorSpec extends Specification {
   "LoyaltyEstimator" should {
+
     val estimator = new LoyaltyEstimator(LoyaltyConfigs(Map(
-      new Period().plusMinutes(5) ->  0.5,
-      new Period().plusMinutes(10) -> 0.2,
-      new Period().plusMinutes(15) -> 0.142857143,
-      new Period().plusMinutes(20) -> 0.1
+      Duration.standardMinutes(5) ->  0.5,
+      Duration.standardMinutes(10) -> 0.2,
+      Duration.standardMinutes(15) -> 0.142857143,
+      Duration.standardMinutes(20) -> 0.1
     )))
     val basePeriod = new DateTime().minusMinutes(3)
     val firstPeriod = new DateTime().minusMinutes(6)

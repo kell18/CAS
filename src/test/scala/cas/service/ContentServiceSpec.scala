@@ -25,7 +25,7 @@ class ContentServiceSpec extends Specification with NoTimeConversions {
 
     "Push proper estims and subjs as received in pullSubjectsChunk" in new AkkaToSpec2Scope {
       val estimator = new TotalEstimator(new LoyaltyEstimator(LoyaltyConfigs(Map(
-        new Period().plusMinutes(1) ->  0.3
+        org.joda.time.Duration.standardMinutes(1) ->  0.3
       ))) :: Nil)
       val likesCnt = 20.0
 

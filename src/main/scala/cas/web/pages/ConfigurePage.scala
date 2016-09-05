@@ -10,7 +10,7 @@ import cas.utils.{Files, Web}
 import cas.web.dealers.vk.VkApiDealer
 import cas.web.model.UsingDealerProtocol._
 import cas.web.model._
-import org.joda.time.Period
+import org.joda.time.{Period, Duration}
 import spray.client.pipelining._
 import akka.pattern.ask
 import spray.json._
@@ -38,10 +38,10 @@ object ConfigurePage {
         val searcher = new ElasticSearch("http://localhost:9201", "rbc-posts", "posts")
         val errOrEstim = createEstimator(
           LoyaltyConfigs(Map(
-            new Period().plusMinutes(5) ->  0.5,
-            new Period().plusMinutes(10) -> 0.2,
-            new Period().plusMinutes(15) -> 0.142857143,
-            new Period().plusMinutes(20) -> 0.1),
+            Duration.standardMinutes(5) ->  0.5,
+            Duration.standardMinutes(10) -> 0.2,
+            Duration.standardMinutes(15) -> 0.142857143,
+            Duration.standardMinutes(20) -> 0.1),
             0.5),
           InvRelevanceConfigs(searcher, 0.121, 0.5))
 

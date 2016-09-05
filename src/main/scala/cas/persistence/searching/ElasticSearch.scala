@@ -152,7 +152,7 @@ class ElasticSearch(val host: String = ElasticSearch.defaultHost, index: String 
     pipeline(Put(Uri(host + "/" + index), indexSchema)) map {_.errorOrResp map {_.acknowledged} }
   }
 
-  val indexSchema = // TODO: Test "number_of_shards": 1,
+  val indexSchema =
     s"""{
        "settings": {
          "analysis": {
