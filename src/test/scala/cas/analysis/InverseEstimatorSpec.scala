@@ -30,13 +30,14 @@ class InverseEstimatorSpec extends Specification with NoTimeConversions {
       errOrActuality must beRight
     }
 
-    "return some estimation on relevant request" in new AkkaToSpec2Scope {
+    "return some estimation on relevant request" in new AkkaToSpec2Scope { // todo it
       val id = "inverseestimatorspectestid"
       val searcher = createTestingElasticS()
       val pushResult = searcher.pushEntity(id, "parrot")
       Await.result(pushResult, 10.seconds) must beRight
       val estimator = new InvRelevanceEstimator(InvRelevanceConfigs(searcher, 0.001))
       val subj = Subject(Description("parrot") :: Nil)
+      Thread.sleep(2000)
       val errOrActuality = estimator.estimateActuality(subj)
       errOrActuality must beRight
       errOrActuality.get must beGreaterThan(0.3)

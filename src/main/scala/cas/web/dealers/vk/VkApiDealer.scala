@@ -2,13 +2,13 @@ package cas.web.dealers.vk
 
 import java.net.URLEncoder
 
+import akka.event.Logging
 import akka.actor.ActorSystem
 import cas.analysis.subject.Subject
 import cas.analysis.subject.components._
 import cas.service.ARouter.Estimation
 import cas.service.ContentDealer
 import cas.utils.{Utils, Web}
-import cas.utils.Mathf.sec2Millis
 import cas.web.dealers.vk.VkApiProtocol._
 import cas.utils.StdImplicits._
 import cas.utils.UtilAliases._
@@ -28,6 +28,7 @@ import Utils._
 import cas.persistence.searching.SearchEngine
 import scala.util.control.NonFatal
 import java.util.concurrent.{BlockingQueue, LinkedBlockingQueue}
+import cas.math.Mathf.sec2Millis
 
 object VkApiDealer {
   import VkApiProtocol._
@@ -37,7 +38,7 @@ object VkApiDealer {
   val apiVersion = "5.50"
 
   val actualityThreshold = 0.5
-  val queriesPerSec = 2
+  val queriesPerSec = 1
 
   val clientId = "5369112"
   val clientSecret = "fFZQIwuIPR5bXxRW0c0I"
@@ -70,7 +71,7 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
       postsComments <- resp.errorOrResp.transform(_.getMessage, _.items)
     } yield for {
       VkPostsComments(post, comments) <- postsComments
-      _ = Try(Await.result(updateIndex(post), 20.seconds))
+      articleBody = Try(Await.result(updateIndex(post), 20.seconds)).getOrElse("")
       comment <- comments
       // d = new DateTime(comment.date * sec2Millis)
       // n = DateTime.now
@@ -80,22 +81,24 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
       Subject(List(ID(post.id.toString))),
       Likability(comment.likes.count.toDouble),
       CreationDate(new DateTime(comment.date * sec2Millis)),
-      Description(comment.text)
+      Description(comment.text),
+      Article(post.id.toString, post.getFullText, articleBody)
     ))
   }
 
   override def pushEstimations(estims: Estimations): Future[Either[ErrorMsg, Any]] = {
     val pipeline = sendReceive ~> unmarshal[VkFallible[VkSimpleResponse]]
-    val scriptLines = (for {
+    val scriptLines = ( for {
       estim <- estims
       if estim.actuality < actualityThreshold
     } yield for {
       id <- estim.subj.getComponent[ID]
      _ = Try(logEstim(estim, "Deleting comment"))
-    } yield buildDelLine(cfg.ownerId.toString, id.value)).map(_.right.getOrElse("")).mkString // TODO: Rm
+    } yield buildDelLine(cfg.ownerId.toString, id.value) ).map(_.right.getOrElse("")).mkString
+    println("\n {POIU" + scriptLines.mkString + "return%201;" + "\n")
     if (scriptLines.nonEmpty) for {
       resp <- pipeline(Get(buildRequest("execute","access_token" -> cfg.token ::
-        "v" -> apiVersion :: "code" -> (scriptLines.mkString + "return%201;") :: Nil)))
+        "v" -> apiVersion :: "code" -> URLEncoder.encode(scriptLines.mkString + " return 0;") :: Nil)))
     } yield for {
       vkResp <- resp.errorOrResp.left.map(_.getMessage)
     } yield vkResp
@@ -115,7 +118,7 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
   }
 
   // TODO: Make unified logging
-  def updateIndex(post: VkPost): Future[Any] = {
+  def updateIndex(post: VkPost) = {
     // println(s"Post: `${post.getFullText}`")
     val logPushing: PartialFunction[Try[Either[ErrorMsg, Any]], Unit] = {
       case Success(Left(err)) => println(s"Cannot push entity to searcher (Left): `$err`")
@@ -128,10 +131,11 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
       _ = pushPostF onComplete logPushing
       tryArticleOpt = Try(extractArticleContent(post.getFullText))
       if tryArticleOpt.isSuccess && tryArticleOpt.get.isDefined
-      pushArticleF = searcher.pushEntity(post.id.toString + "_article", tryArticleOpt.get.get)
+      article = tryArticleOpt.get.get
+      pushArticleF = searcher.pushEntity(post.id.toString + "_article", article)
       articleErrOrAny <- pushArticleF
       _ = pushArticleF onComplete logPushing
-    } yield true
+    } yield article
   }
 
   def extractArticleContent(post: String) = {
@@ -185,7 +189,7 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
 
   // TODO: Make like commentsQuery
   def buildDelLine(ownerId: String, id: String) =
-    s"""API.wall.deleteComment({%22owner_id%22:%22$ownerId%22,%22comment_id%22:$id});"""
+    s""" API.wall.deleteComment({ "owner_id": $ownerId, "comment_id": $id }); """
 
   def buildRequest(method: String, params: List[(String, String)]) = Web.buildRequest(apiUrl)(method)(params)
 }

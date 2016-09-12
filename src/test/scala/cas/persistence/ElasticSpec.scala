@@ -2,7 +2,6 @@ package cas.persistence
 
 import akka.actor.ActorSystem
 import cas.persistence.searching.ElasticSearch
-import cas.utils.Mathf
 import org.specs2.mutable.Specification
 import org.specs2.time.NoTimeConversions
 import utils.AkkaToSpec2Scope

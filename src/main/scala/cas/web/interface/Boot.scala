@@ -22,8 +22,10 @@ import scala.xml.factory.XMLLoader
 import scala.xml.parsing.NoBindingFactoryAdapter
 import org.ccil.cowan.tagsoup.jaxp.SAXFactoryImpl
 import Utils._
+import cas.persistence.SubjectsGrader
 import cas.utils.Files._
 import cas.utils.UtilAliases.ErrorMsg
+import cas.web.pages.ConfigurePage
 
 import scala.concurrent.duration._
 import scala.xml.{Node, XML}
@@ -33,6 +35,7 @@ import cats.syntax.cartesian._
 
 object ImplicitRuntime {
   implicit val system = ActorSystem("web-service")
+  implicit val timeout = 10.seconds
 }
 
 import spray.client.pipelining._
@@ -40,7 +43,7 @@ object Boot extends App {
   import ImplicitRuntime._
   import system.dispatcher
 
-  implicit val timeout = Timeout(10.seconds)
+  implicit val t = Timeout(timeout)
   val interface = system.actorOf(Props[AInterfaceControl], "interface-control")
 
   val config =  ConfigFactory.load()
@@ -50,11 +53,29 @@ object Boot extends App {
   println(s"Starting server on $addr:$port")
 
   IO(Http) ? Http.Bind(interface, addr, port)
+  // transformData
 
   /*val a = (valid[String, Int](1) combine
            valid[String, Int](2) combine
            valid[String, Int](3)) map {_ + _ + _}
 
   println(a)*/
+
+  def transformData = {
+    val weights = Array(3.1642, -61.6405, -15.6417, -1.7404)
+    val classifier = new SubjectsClassificator(weights,
+      new StaticLoyaltyEstimator(StaticLoyaltyConfigs()),
+      new ContinuousInvRelEstimator(ContinuousInvRelEstimatorConfigs(ConfigurePage.searcher)),
+      new CorrectnessEstimator(CorrectnessConfigs()))
+
+    val grader: SubjectsGrader = new SubjectsGrader()
+    val path = Files.resources + "/cas/data/marked/marked_testing.json"
+    for {
+      // data <- grader.convertDumpToData(path)
+      estims <- grader.convertDumpToEstimations(path)
+    } yield {
+      println(estims.length)
+    }
+  }
 
 }
