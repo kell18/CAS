@@ -47,15 +47,19 @@ class AProducer(dealer: ContentDealer) extends Actor with ActorLogging { // TODO
     case PushingEstimations(chunk) => changeContext(consumers, chunk :: estimChunks)
 
     case QueryTick => {
-      val estims = estimChunks.flatten // TODO: Send one by one chunk
-      if (estims.nonEmpty) Try(Await.result(dealer.pushEstimations(estims), timeout)) match {
-        case Success(Right(_)) => changeContext(consumers, Nil)
-        case Success(Left(err)) =>
-          log.error(s"Dealer returns Left on pushEstims: `$err`")
-          changeContext(consumers, Nil)
-        case Failure(NonFatal(ex)) =>
-          log.warning(s"Dealer returns error on pushEstims: `${ex.getMessage}`")
-          changeContext(consumers, Nil)
+      val estims = if (estimChunks.nonEmpty) estimChunks.head else Nil
+      if (estims.nonEmpty) {
+        val (chunk, rest) = estims.splitAt(50)
+        val restChunks = if (rest.nonEmpty) rest :: estimChunks.tail else estimChunks.tail
+        Try(Await.result(dealer.pushEstimations(chunk), timeout)) match {
+          case Success(Right(_)) => changeContext(consumers, restChunks)
+          case Success(Left(err)) =>
+            log.error(s"Dealer returns Left on pushEstims: `$err`")
+            changeContext(consumers, restChunks)
+          case Failure(NonFatal(ex)) =>
+            log.warning(s"Dealer returns error on pushEstims: `${ex.getMessage}`")
+            changeContext(consumers, restChunks)
+        }
       }
       else consumers match {
         case Nil => Unit
@@ -75,7 +79,7 @@ class AProducer(dealer: ContentDealer) extends Actor with ActorLogging { // TODO
 
   def changeContext(consumers: List[ActorRef], estims: List[Estimations]) = {
     if (estims.flatten.length > 50) {
-      log.warning("estims length: " + estims.flatten.length)
+      log.warning("estims length: " + estims.length + " estims flatten length: " + estims.flatten.length)
     }
     context.become(serve(consumers, estims))
   }
