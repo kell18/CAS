@@ -82,6 +82,7 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
       Likability(comment.likes.count.toDouble),
       CreationDate(new DateTime(comment.date * sec2Millis)),
       Description(comment.text),
+      if (comment.attachments.isDefined) Attachments(comment.attachments.get.map(_.kind)) else Attachments(Nil),
       Article(post.id.toString, post.getFullText, articleBody)
     ))
   }
@@ -95,7 +96,6 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
       id <- estim.subj.getComponent[ID]
      _ = Try(logEstim(estim, "Deleting comment"))
     } yield buildDelLine(cfg.ownerId.toString, id.value) ).map(_.right.getOrElse("")).mkString
-    println("\n {POIU" + scriptLines.mkString + "return%201;" + "\n")
     if (scriptLines.nonEmpty) for {
       resp <- pipeline(Get(buildRequest("execute","access_token" -> cfg.token ::
         "v" -> apiVersion :: "code" -> URLEncoder.encode(scriptLines.mkString + " return 0;") :: Nil)))

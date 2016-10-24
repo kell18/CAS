@@ -36,14 +36,15 @@ object ConfigurePage {
 	def apply(pagePath: String, serviceControl: ActorRef) = path(pagePath){
 		get	{
 			parameter("isRun".as[Boolean].?) { (isRunOpt) =>
-        val errOrEstim = createEstimator(
+        val errOrEstim: Either[String, TotalEstimator] =
+          Right(new TotalEstimator(new AttachmentsEstimator(AttachmentsConfigs()) :: Nil)) /*createEstimator(
           LoyaltyConfigs(Map(
             Duration.standardMinutes(5) ->  0.5,
             Duration.standardMinutes(10) -> 0.2,
             Duration.standardMinutes(15) -> 0.142857143,
             Duration.standardMinutes(20) -> 0.1),
             0.5),
-          InvRelevanceConfigs(searcher, 0.121, 0.5))
+          InvRelevanceConfigs(searcher, 0.121, 0.5)) */
 
         val errOrStatusOpt = for {
           isRun <- isRunOpt

@@ -83,9 +83,12 @@ object VkApiProtocol extends DefaultJsonProtocol {
   case class VkLikes(count: Int)
   implicit val vkLikesFormat = jsonFormat1(VkLikes)
 
+  case class VkAttachment(kind: String)
+  implicit val vkAttachmentFormat = jsonFormat(VkAttachment, "type")
 
-  case class VkComment(id: Int, from_id: Long, date: Long, text: String, likes: VkLikes)
-  implicit val vkCommentFormat = jsonFormat(VkComment, "id", "from_id", "date", "text", "likes")
+  case class VkComment(id: Int, from_id: Long, date: Long, text: String,
+                       likes: VkLikes, attachments: Option[List[VkAttachment]])
+  implicit val vkCommentFormat = jsonFormat(VkComment, "id", "from_id", "date", "text", "likes", "attachments")
 
 
   case class VkPostsComments(post: VkPost, comments: List[VkComment])
