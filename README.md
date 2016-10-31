@@ -1,52 +1,29 @@
 # CAS. Content analysis system
 
-TODO: Update README.md
-
-System for analysis actuality of comments, feedback, etc.
-
-<br>
-
-#####Actuality metrics:
-- _Likeability_         - user sympathy
-- _Inverse relevance_   - score from elasticsearch
-- _Semantics_           - entity extraction and their comparison
+System for automatic content moderation.
 
 <br>
 
 #####Realized features:
-- [x] Virality estimator
-- [x] Inverse relevance estimator
-- [x] Framework on Scala
-- [x] Vk API communication
-- [x] Elasticsearch interaction
+- [x] Researched characteristics of content: likability, inverse relevance, correctness.
+- [x] Collected and marked data set of 1250 items
+- [x] Trained logistic regression model on Matlab
+- [x] Implemented сontinuous filtering service on Scala (Vk API, ElasticSearch)
 
 #####Further work
-- [ ] Semantics
-- [ ] Using gathered metrics to train model for predicting actuality
+- [ ] Discover new characteristics
+- [ ] Implement online learning (via chrome app and human moderators)
+- [ ] Make a site for selling
 
 <br>
 
-#####Architecture
-Main abstraction - `Subject`, container of components (description, likes, ...).
+<br>
 
-`Subject` comes from `Producer`s and evaluating by `ActualityEstimator`s into `Estimations`.
+#####Actuality characteristics:
+- _Likeability_         - user sympathy
+- _Inverse relevance_   - score from elasticsearch
+- _Correctness_         - number of punctuation characters to message length, uppercase chars amount, message size
 
-Estimations sent to the `Dealer`s.
-
-
-#####Subject Components:
-- ID
-- object
-- virality
-- likeability
-- description
-- author
- 
---------------------
-
-- attachments
-- rate
-- title
 
 
 Albert Bikeev.
