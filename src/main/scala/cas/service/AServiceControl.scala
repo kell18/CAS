@@ -46,6 +46,7 @@ class AServiceControl extends Actor with ActorLogging {
 
   val workersCount = 2 // Runtime.getRuntime.availableProcessors
   var querySchedule: Option[Cancellable] = None
+  var extraId = 0 // For resolving actors names collisions
 
   override def receive: Receive = serve(None, None, Nil)
 
@@ -80,15 +81,16 @@ class AServiceControl extends Actor with ActorLogging {
   }
 
   def activate(dealer: ContentDealer, estim: ActualityEstimator) = {
-    val prod = Some(context.actorOf(producerProps(dealer), "Producer"))
+    extraId += 1
+    val prod = Some(context.actorOf(producerProps(dealer), "Producer-e" + extraId))
     val tryInitDealer = Try(Await.result(dealer.initialize, 60.seconds))
     if (tryInitDealer.isSuccess) {
       val frequency = dealer.estimatedQueryFrequency
       querySchedule = Some(context.system.scheduler.schedule(frequency, frequency, prod.get, QueryTick))
       context.system.scheduler.maxFrequency
-      val rout = Some(context.actorOf(routerProps(prod.get), "Router"))
+      val rout = Some(context.actorOf(routerProps(prod.get), "Router-e" + extraId))
       val wrkrs = for (i <- 1 to workersCount)
-        yield context.actorOf(workerProps(estim, rout.get), "Worker-" + i)
+        yield context.actorOf(workerProps(estim, rout.get), s"Worker-e$extraId-$i")
       log.info("[AServiceControl] Service successfully started.")
       context.become(serve(prod, rout, wrkrs.toList))
     }

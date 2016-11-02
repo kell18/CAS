@@ -26,7 +26,7 @@ object IndexPage {
   import cas.web.interface.ImplicitRuntime._
   import scala.concurrent.ExecutionContext.Implicits.global
   import AServiceControl._
-  implicit val timeout = Timeout(3.seconds)
+  implicit val timeout = Timeout(15.seconds)
 
 	def apply(pagePath: String, serviceControl: ActorRef) = path(pagePath) {
     get {

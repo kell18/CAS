@@ -28,7 +28,7 @@ object ConfigurePage {
   import cas.web.interface.ImplicitRuntime._
   import system.dispatcher
   import cas.service.AServiceControl.{GetStatus, Start, Status, Stop}
-  implicit val timeout = Timeout(3.seconds)
+  implicit val timeout = Timeout(60.seconds)
   val searcher = new ElasticSearch("http://localhost:9201", "rbc-posts", "posts")
 
   /*new Period().plusSeconds(10) ->  1.0)*/
