@@ -23,10 +23,11 @@ case class InvRelevanceConfigs(
 /** Computes relevance of subject by scoring it relative to @ind / @spape index in elasticsearch */
 class InvRelevanceEstimator(cfg: InvRelevanceConfigs) extends ActualityEstimator(cfg) {
 
+  // TODO: Play with elastics indexes models (bm25)
   override def estimateActuality(subj: Subject): Either[String, Double] = for {
     descr <- subj.getComponent[Description]
     resp <- Await.result(cfg.searcher.queryEntityScore(descr.text), 10.seconds)
-    score = clampScore(resp.maxScore)
+    score = clampScore(resp.maxScore)   // TODO: contin val
   } yield if (score > cfg.threshold) 1.0 else 0.0
 
   // TODO (1): Add NaN check

@@ -25,7 +25,7 @@ import Utils._
 import cas.persistence.SubjectsGrader
 import cas.utils.Files._
 import cas.utils.UtilAliases.ErrorMsg
-import cas.web.pages.ConfigurePage
+import cas.web.pages.ControlPage
 
 import scala.concurrent.duration._
 import scala.xml.{Node, XML}
@@ -65,7 +65,7 @@ object Boot extends App {
     val weights = Array(3.1642, -61.6405, -15.6417, -1.7404)
     val classifier = new SubjectsClassificator(weights,
       new StaticLoyaltyEstimator(StaticLoyaltyConfigs()),
-      new ContinuousInvRelEstimator(ContinuousInvRelEstimatorConfigs(ConfigurePage.searcher)),
+      new ContinuousInvRelEstimator(ContinuousInvRelEstimatorConfigs(ControlPage.searcher)),
       new CorrectnessEstimator(CorrectnessConfigs()))
 
     val grader: SubjectsGrader = new SubjectsGrader()

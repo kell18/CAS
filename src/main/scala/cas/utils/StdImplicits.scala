@@ -38,4 +38,9 @@ object StdImplicits {
       case None => Left(whenLeft)
     }
   }
+
+  implicit class BoolToOption(val self: Boolean) extends AnyVal {
+    def toOption[A](value: => A): Option[A] = if (self) Some(value) else None
+    def toOption[A](): Option[Boolean] = if (self) Some(self) else None
+  }
 }

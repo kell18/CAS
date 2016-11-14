@@ -11,6 +11,7 @@ import spray.http.MediaTypes._
 import spray.util.LoggingContext
 import spray.http.StatusCodes._
 import cas.web.pages._
+import spray.routing.Directives._
 
 import scala.util.{Failure, Success}
 import scala.util.control.NonFatal
@@ -28,10 +29,19 @@ trait InterfaceControl extends HttpService {
   val serviceControl = system.actorOf(Props[AServiceControl])
 
   def route = respondWithMediaType(`text/html`) {
-    IndexPage("", serviceControl) ~
-    VkAuth(authVk) ~
-    ConfigurePage("configure", serviceControl) ~
-    TestPage("t")
+    optionalCookie("cas_token") {
+      case Some(casToken) =>
+        MonitoringPage("") ~
+        ControlPage("control", serviceControl) ~
+        MonitoringPage("monitoring") ~
+        LoginPage.apply("auth", "monitoring")
+      // VkAuth(authVk) ~
+      case None =>
+        path(Segment) {
+          anyPath => if (anyPath != "login") redirect("login", StatusCodes.TemporaryRedirect)
+                     else LoginPage.content("login", "monitoring")
+        }
+    }
   }
 
   implicit def commonExceptionHandler(implicit log: LoggingContext) = ExceptionHandler {

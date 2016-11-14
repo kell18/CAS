@@ -29,7 +29,7 @@ class ContinuousInvRelEstimator(cfg: ContinuousInvRelEstimatorConfigs) extends A
     else for {
       descr <- subj.getComponent[Description]
       resp <- Await.result(cfg.searcher.queryEntityScore(descr.text), 10.seconds)
-    } yield clampScore(resp.maxScore)
+    } yield { println("clampScore(descr): " + clampScore(resp.maxScore)); clampScore(resp.maxScore); }
   }
 
   // TODO (1): Add NaN check

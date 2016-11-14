@@ -53,6 +53,8 @@ object ElasticProtocol extends DefaultJsonProtocol {
     case HttpEntity.Empty => deserializationError("Empty entity. SearchResponse expected")
   }
 
+  // case class CommentsResponse(comments: Option[])
+
   case class EsError(kind: String, reason: String) { def getMessage: ErrorMsg = s"ES Error: $kind : $reason" }
   implicit val esErrorFormat = jsonFormat(EsError, "type", "reason")
   implicit def esErrUnmarsh = Unmarshaller[EsError] (`application/json`) {
@@ -83,8 +85,9 @@ object ElasticSearch {
   val defaultHost = "http://localhost:9201"
 }
 
+// TODO: El, make comments on hard deleting logs ones in day or in DB
 class ElasticSearch(val host: String = ElasticSearch.defaultHost, index: String = "cas-ind",
-                    mtype: String = "docs", ttl: Duration = Duration("2 hours"))
+                    mtype: String = "docs", useTtl: Boolean = true, ttl: Duration = Duration("12 hours"))
                    (implicit val system: ActorSystem) extends SearchEngine {
   import ElasticProtocol._
   import spray.httpx.SprayJsonSupport._
@@ -162,7 +165,7 @@ class ElasticSearch(val host: String = ElasticSearch.defaultHost, index: String 
        "mappings": {
          "_default_": {
            "_ttl": {
-             "enabled": true,
+             "enabled": $useTtl,
              "default": "${ttl.toSeconds}s"
            }
          },

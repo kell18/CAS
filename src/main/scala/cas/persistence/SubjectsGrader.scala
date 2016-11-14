@@ -11,7 +11,7 @@ import cas.persistence.SubjectsGraderProtocol.Snapshot
 import cas.service.ARouter.Estimation
 import cas.service.ContentDealer
 import cas.utils.{Files, Regexf}
-import cas.web.pages.ConfigurePage
+import cas.web.pages.ControlPage
 import spray.json._
 import cas.utils.StdImplicits._
 import cas.utils.Utils.escapeJson
@@ -63,7 +63,7 @@ class SubjectsGrader(val pushThreshold: Int = 50) {
   import spray.json.CollectionFormats
   import cas.persistence.SubjectsGraderProtocol._
 
-  val searcher = ConfigurePage.searcher
+  val searcher = ControlPage.searcher
   val data: mutable.Map[String, Dump] = mutable.Map()
 
   def commitSubject(subj: Subject) = for {
@@ -73,13 +73,13 @@ class SubjectsGrader(val pushThreshold: Int = 50) {
     relevance <- errOrRelevance
     date <- subj.getComponent[CreationDate]
     likes <- subj.getComponent[Likability]
-    article <- subj.getComponent[Article]
+    // article <- subj.getComponent[Article] // uncomment in vk dealer
   } yield {
-    val id = article.id + "_" + subjId.value
+    /*val id = article.id + "_" + subjId.value
     if (!data.contains(id)) println("data.size: " + (data.size + 1))
     data(id) = Dump(id, escapeJson(descr.text), likes.value.toInt,
-      relevance.maxScore.getOrElse(0.0), date.value.toString(dateFormatter), article.brief)
-    if (data.size >= pushThreshold) pushToFile(Snapshot(data.values.toList))
+      relevance.maxScore.getOrElse(0.0), date.value.toString(dateFormatter), article.brief)*/
+    if (data.size >= pushThreshold) pushToFile(Snapshot(data.values.toList)) else Right(1)
   }
 
   def pushToFile(snapshot: Snapshot, pathOpt: Option[String] = None) = {

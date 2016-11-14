@@ -1,8 +1,11 @@
 package cas.utils
 
 import StdImplicits._
-import java.io.File
+import java.io.{File, FileNotFoundException}
+
+import scala.io.Source
 import scala.util.Try
+import scala.xml.pull._
 
 object Files {
   val resources = new File(".").getCanonicalPath + "/resources"

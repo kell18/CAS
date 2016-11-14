@@ -15,20 +15,26 @@ import cas.utils.UtilAliases._
 import spray.client.pipelining._
 import spray.httpx.SprayJsonSupport._
 import org.joda.time.{DateTime, Period}
+
 import scala.collection.mutable
 import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success, Try}
 import spray.json._
 import cas.utils.StdImplicits.RightBiasedEither
+
 import scala.concurrent.duration._
 import org.ccil.cowan.tagsoup.jaxp.SAXFactoryImpl
+
 import scala.xml.{Node, XML}
 import scala.xml.parsing.NoBindingFactoryAdapter
 import Utils._
 import cas.persistence.searching.SearchEngine
+
 import scala.util.control.NonFatal
 import java.util.concurrent.{BlockingQueue, LinkedBlockingQueue}
+
 import cas.math.Mathf.sec2Millis
+import cas.web.pages.{ControlPage, MonitoringPage}
 
 object VkApiDealer {
   import VkApiProtocol._
@@ -37,7 +43,7 @@ object VkApiDealer {
   val apiUrl = "https://api.vk.com/method/"
   val apiVersion = "5.50"
 
-  val actualityThreshold = 0.5
+  val actualityThreshold = 0.3
   val queriesPerSec = 1
 
   val clientId = "5369112"
@@ -82,8 +88,8 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
       Likability(comment.likes.count.toDouble),
       CreationDate(new DateTime(comment.date * sec2Millis)),
       Description(comment.text),
-      if (comment.attachments.isDefined) Attachments(comment.attachments.get.map(_.kind)) else Attachments(Nil),
-      Article(post.id.toString, post.getFullText, articleBody)
+      if (comment.attachments.isDefined) Attachments(comment.attachments.get.map(_.kind)) else Attachments(Nil)
+      // Article(post.id.toString, post.getFullText, articleBody)
     ))
   }
 
@@ -94,8 +100,10 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
       if estim.actuality < actualityThreshold
     } yield for {
       id <- estim.subj.getComponent[ID]
-     _ = Try(logEstim(estim, "Deleting comment"))
-    } yield buildDelLine(cfg.ownerId.toString, id.value) ).map(_.right.getOrElse("")).mkString
+      _ = Try(logEstim(estim, "Deleting comment"))
+    } yield {
+      buildDelLine(cfg.ownerId.toString, id.value)
+    }).map(_.right.getOrElse("")).mkString
     if (scriptLines.nonEmpty) for {
       resp <- pipeline(Get(buildRequest("execute","access_token" -> cfg.token ::
         "v" -> apiVersion :: "code" -> URLEncoder.encode(scriptLines.mkString + " return 0;") :: Nil)))
@@ -147,7 +155,7 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
         node.attributes.exists(_.value.text == value)
       }
       val xml = loadXml(scala.io.Source.fromURL(url.get).mkString)
-      val article = xml \\ "_" filter attributeValueEquals("article__text")
+      val article = xml \\ "_" filter attributeValueEquals("content-note")
       // println("article.text: " + article.text)
       Some(article.text)
     }
@@ -155,12 +163,19 @@ class VkApiDealer(cfg: VkApiConfigs, searcher: SearchEngine)(implicit val system
   }
 
   def logEstim(estim: Estimation, action: String) = {
-    println("[" + new DateTime().getHourOfDay + ":" + new DateTime().getMinuteOfHour + "] " + action +
-      " likes cnt: `" + estim.subj.getComponent[Likability].get.value + "`" +
-      " text: `" + estim.subj.getComponent[Description].get.text + "`" +
-      " time elapsed: `" + (new org.joda.time.Duration(estim.subj.getComponent[CreationDate].get.value,
-          DateTime.now()).getMillis / 1000).toString + " sec`"+
-      " actuality: `" + estim.actuality + "` ")
+    val descr = "[" + new DateTime().getHourOfDay + ":" + new DateTime().getMinuteOfHour + "]" +
+      " Likes: `" + estim.subj.getComponent[Likability].get.value + "`" +
+      " Time elapsed: `" + (new org.joda.time.Duration(estim.subj.getComponent[CreationDate].get.value,
+                            DateTime.now()).getMillis / 1000).toString + " sec`"+
+      " Total actuality: `" + estim.actuality + "`" +
+      " Text: `" + estim.subj.getComponent[Description].get.text + "`"
+    val postId = estim.subj.getComponent[Subject].right.get.getComponent[ID].right.get
+
+    MonitoringPage.addDeletedComment(descr);
+
+    // ConfigurePage.commentsStorage.pushComment(estim.subj.getComponent[ID].right.get.value, postId.value, descr)
+
+    println(descr)
   }
 
   def commentsQuery(startPostInd: Long, postsCount: Int) =

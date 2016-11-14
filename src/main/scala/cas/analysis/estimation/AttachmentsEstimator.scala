@@ -12,6 +12,6 @@ class AttachmentsEstimator(cfg: AttachmentsConfigs) extends ActualityEstimator(c
 
   override def estimateActuality(subj: Subject): Either[String, Double] = for {
     attachs <- subj.getComponent[Attachments]
-  } yield if (attachs.kinds.nonEmpty) 0.0 else 1.0
+  } yield if (attachs.kinds.nonEmpty) -1.0 else 0.0
 
 }

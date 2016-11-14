@@ -9,15 +9,25 @@ import cas.utils.UtilAliases.ErrorMsg
 class SubjectsClassificator(weights: Array[Double],
                             loyaltyEstim: StaticLoyaltyEstimator,
                             relevanceEstim: ContinuousInvRelEstimator,
-                            correctnessEstim: CorrectnessEstimator) {
+                            correctnessEstim: CorrectnessEstimator,
+                            estimWeight: Double = 0.5,
+                            threshold: Double = 0.5) extends ActualityEstimator(new EstimatorConfigs(estimWeight)) {
   require(weights.length > 3)
+
+  override def estimateActuality(subj: Subject): Either[String, Double] = for {
+    loyalty <- loyaltyEstim.estimateActuality(subj)
+    rel <- relevanceEstim.estimateActuality(subj)
+    corr <- correctnessEstim.estimateActuality(subj)
+  } yield {
+    1.0 - sigmoid(weights(0) + weights(1) * loyalty + weights(2) * rel + weights(3) * corr)
+  }
 
   def predictClass(subj: Subject): Either[ErrorMsg, SubjectClass.Value] = for {
     loyalty <- loyaltyEstim.estimateActuality(subj)
     rel <- relevanceEstim.estimateActuality(subj)
     corr <- correctnessEstim.estimateActuality(subj)
   } yield {
-    SubjectClass.fromBoolean(sigmoid(weights(0) + weights(1) * loyalty + weights(2) * rel + weights(3) * corr) >= 0.5)
+    SubjectClass.fromBoolean(sigmoid(weights(0) + weights(1) * loyalty + weights(2) * rel + weights(3) * corr) >= threshold)
   }
 }
 

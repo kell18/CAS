@@ -1,7 +1,11 @@
 package cas.persistence
 
 import akka.actor.ActorSystem
+import cas.analysis.subject.Subject
+import cas.analysis.subject.components._
+import cas.analysis.estimation.{CorrectnessConfigs, CorrectnessEstimator}
 import cas.persistence.searching.ElasticSearch
+import cas.service.ARouter.Estimation
 import org.specs2.mutable.Specification
 import org.specs2.time.NoTimeConversions
 import utils.AkkaToSpec2Scope
@@ -9,36 +13,36 @@ import utils.AkkaToSpec2Scope
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import cas.utils.StdImplicits.RightBiasedEither
+import org.joda.time.DateTime
 
-object ElasticSpec {
-  val host = "http://localhost:9201"
-  val index = "cas-testing"
-  val mtype = "test"
-  val id = "testid"
-
-  def createTestingElasticS(ind: String = index, tp: String = mtype)
-                           (implicit system: ActorSystem) = {
-    new ElasticSearch(host, ind, tp)
-  }
-}
-
-class ElasticSpec extends Specification with NoTimeConversions {
+class AccuracyTestingSpec extends Specification {
   import ElasticSpec._
   sequential
 
-  "Elasticsearch" should {
+  case class Comment(txt: String, passedSecs: Int, likes: Int = 0, isDel: Boolean = false)
+  case class Estim(est: Estimation, isDelEstim: Boolean)
+
+  /*val realEstimsP1 = Estimation(Subject(List(Description(""), CreationDate(new DateTime().minusMinutes()), Likability(0))), 1.0) ::
+    Estimation(Subject(List(Description(""), CreationDate(new DateTime().minusMinutes()), Likability(0))), 1.0) ::
+    Estimation(Subject(List(Description(""), CreationDate(new DateTime().minusMinutes()), Likability(0))), 1.0) :: Nil*/
+
+  /*def computeAccuracy(estims: List[Estim]) = (for {
+    e <- estims
+  } yield if (e.isDelEstim != e.cmt.isDel) 1 else 0).sum*/
+
+  /*"AccuracyTests" should {
     sequential
 
-    val defaultEntity = "Red fox"
-    "indexing documents" in new AkkaToSpec2Scope {
+    "simple correctness" in new AkkaToSpec2Scope {
+      // val correctnesEst = new CorrectnessEstimator(CorrectnessConfigs())
+      // val actualityVals = realEstimsP1.map(e => correctnesEst.estimateActuality(e.subj))
+      // ...
+    }
+
+    "simple correctness" in new AkkaToSpec2Scope {
       val elastic = createTestingElasticS()
       Await.result(elastic.initStorage, 10.seconds) must beRight
-      elastic.pushEntity(id, defaultEntity)
-      Thread.sleep(2000)
-      val entity = Await.result(elastic.getEntity(id), 10.seconds)
-      entity must beRight
-      entity.get must beSome
-      entity.get.get must beEqualTo(defaultEntity)
+
     }
 
     "compute scores" in {
@@ -80,6 +84,6 @@ class ElasticSpec extends Specification with NoTimeConversions {
       val elastic = createTestingElasticS()
       Await.result(elastic.disposeStorage, 10.seconds) must beRight
     }
-  }
+  }*/
 
 }
